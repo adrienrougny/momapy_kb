@@ -1,0 +1,28 @@
+[project]
+name = "momapy_kg"
+version = "0.1.0"
+description = "Momapy maps to KG"
+authors = [
+    {name = "Adrien Rougny", email = "adrienrougny@gmail.com"},
+]
+dependencies = [
+    "neomodel>=5.2.1",
+    "inflect>=7.2.0",
+    "colorama>=0.4.6",
+]
+requires-python = ">=3.10, <=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "-e file:///${PROJECT_ROOT}/../momapy#egg=momapy",
+]
