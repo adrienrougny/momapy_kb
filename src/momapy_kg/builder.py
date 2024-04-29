@@ -11,6 +11,8 @@ import importlib
 import neomodel
 import inflect
 
+import momapy.drawing
+
 import momapy_kg.utils
 
 
@@ -445,3 +447,22 @@ def save_node_from_object(obj, object_to_node=None):
     node = node_cls.save_from_object(obj, object_to_node=object_to_node)
     object_to_node[id(obj)] = node
     return node
+
+
+class NoneValueNode(MomapyNode):
+    _cls_to_build = momapy.drawing.NoneValueType
+
+    @classmethod
+    def save_from_object(cls, obj, object_to_node=None):
+        if object_to_node is not None:
+            node = object_to_node.get(id(obj))
+            if node is not None:
+                return node
+        else:
+            object_to_node = {}
+        node = cls()
+        node.save()
+        return node
+
+
+register_node_class(NoneValueNode)
