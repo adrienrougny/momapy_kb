@@ -364,7 +364,7 @@ def make_node_cls_from_dataclass(cls):
     node_cls_name = f"{cls.__name__}Node"
     node_cls_metadata = {}
     node_cls_ns = {
-        "__module__": sys.modules[__name__],
+        "__module__": __name__,
         "_cls_to_build": cls,
         "_metadata": node_cls_metadata,
         "build": _build,
@@ -411,14 +411,14 @@ def make_node_cls_from_dataclass(cls):
     return node_cls
 
 
-def get_or_make_node_cls(cls):
+def get_or_make_node_cls(cls, register=True):
     node_cls = node_classes.get(cls)
     if node_cls is None:
         if dataclasses.is_dataclass(cls):
             node_cls = make_node_cls_from_dataclass(cls)
         else:
             node_cls = None
-        if node_cls is not None:
+        if node_cls is not None and register:
             register_node_class(node_cls)
     return node_cls
 
