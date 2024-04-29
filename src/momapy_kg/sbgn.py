@@ -5,7 +5,7 @@ import momapy_kg.builder
 
 
 # class AnnotationNode(
-#     momapy_neo4j.builder.get_or_make_node_cls(momapy.core.ModelElement)
+#     momapy_kg.builder.get_or_make_node_cls(momapy.core.ModelElement)
 # ):
 #     _cls_to_build = momapy.sbgn.core.Annotation
 #     qualifier = neomodel.StringProperty(required=True)
@@ -35,10 +35,10 @@ import momapy_kg.builder
 #         )
 
 
-# momapy_neo4j.builder.register_node_class(AnnotationNode)
+# momapy_kg.builder.register_node_class(AnnotationNode)
 
 
-class NoneValueNode(momapy_neo4j.builder.MomapyNode):
+class NoneValueNode(momapy_kg.builder.MomapyNode):
     _cls_to_build = momapy.drawing.NoneValueType
 
     @classmethod
@@ -54,4 +54,4 @@ class NoneValueNode(momapy_neo4j.builder.MomapyNode):
         return node
 
 
-momapy_neo4j.builder.register_node_class(NoneValueNode)
+momapy_kg.builder.register_node_class(NoneValueNode)

@@ -11,7 +11,7 @@ import importlib
 import neomodel
 import inflect
 
-import momapy_neo4j.utils
+import momapy_kg.utils
 
 
 class MomapyNode(neomodel.StructuredNode):
@@ -315,7 +315,7 @@ def make_node_cls_from_dataclass(cls):
             object_to_node = {}
         args = {}
         to_connect = collections.defaultdict(list)
-        properties = momapy_neo4j.utils.get_properties_from_node_cls(cls)
+        properties = momapy_kg.utils.get_properties_from_node_cls(cls)
         for property_ in properties:
             property_name = property_["name"]
             if property_name in cls._metadata:
