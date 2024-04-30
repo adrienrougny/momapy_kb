@@ -22,6 +22,7 @@ def get_properties_from_node_cls(node_cls):
             property_args["cardinality"] = property_.manager.__name__
         else:
             property_attrs["type"] = "property"
+            property_args["type"] = type(property_).__name__
         properties.append(property_attrs)
     return properties
 
