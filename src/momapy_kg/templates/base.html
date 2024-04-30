@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>My documentation</title>
+        <style>
+            .content {
+                display: flex;
+                justify-content: flex-start;
+            }
+            .sidenav {
+                position: sticky;
+                top: 10px;
+                width: 300px;
+                flex-shrink: 0;
+                align-self: flex-start;
+                position: -webkit-sticky;
+                margin-top: 5px;
+                margin-left: 5px;
+                font-size: 14px;
+                overflow-y: scroll;
+                height: 600px;
+            }
+            .main {
+                margin-top: 0px;
+                margin-left: 10px;
+                font-size: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="content">
+            <div class="sidenav">
+                {% block sidenav %}{% endblock %}
+            </div>
+            <div class="main">
+                {% block main %}{% endblock %}
+            </div>
+        </div>
+    </body>
+    <footer>
+        <div class="footer"></div>
+    </footer>
+</html>

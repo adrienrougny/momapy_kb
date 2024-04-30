@@ -1,0 +1,5 @@
+<ul>
+{% for node_spec in node_specs %}
+    <li><a href="#{{ node_spec['label'] }}">{{ node_spec['label'] }}</a></li>
+{% endfor %}
+</ul>
