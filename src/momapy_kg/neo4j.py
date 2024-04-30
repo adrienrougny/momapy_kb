@@ -7,9 +7,11 @@ import enum
 import collections
 import sys
 import importlib
+import pathlib
 
 import neomodel
 import inflect
+import jinja2
 
 import momapy.drawing
 
@@ -113,6 +115,11 @@ def _make_rtype_from_attr_name(attr_name):
     return rtype
 
 
+def _make_node_cls_name(cls):
+    node_cls_name = f"{cls.__name__}Node"
+    return node_cls_name
+
+
 def _make_relationship(
     relationship_cls, node_cls_name, attr_name, required=True, many=False
 ):
@@ -141,32 +148,22 @@ def _make_property(property_cls, sub_property=None, required=True):
 
 
 def _type_to_properties(
-    type_, attr_name, super_type=None, required=True, many=False
+    type_, attr_name, _rec_classes, super_type=None, required=True, many=False
 ):
     """
     ForwardRef(type)->
     """
     properties_and_types = []
-    if isinstance(
-        type_, typing.ForwardRef
-    ):  # TO DO: should find if type is already in nodes first
+    if isinstance(type_, typing.ForwardRef):
         type_ = _evaluate_forward_ref(type_)
-        node_cls_name = f"{type_.__name__}Node"
-        relationship = _make_relationship(
-            neomodel.RelationshipTo,
-            node_cls_name,
+        return _type_to_properties(
+            type_,
             attr_name,
+            _rec_classes,
+            super_type=super_type,
             required=required,
             many=many,
         )
-        properties_and_types = [
-            (
-                relationship,
-                super_type,
-                type_,
-            )
-        ]
-        return properties_and_types
     # We get the origin of type_, e.g., if type_ = X[Y, Z, ...] we get X
     o_type = typing.get_origin(type_)  # returns None if not supported
     if o_type is not None:
@@ -175,7 +172,11 @@ def _type_to_properties(
                 a_types = typing.get_args(type_)
                 type_ = typing.Union[tuple(a_types)]
                 properties_and_types = _type_to_properties(
-                    type_, attr_name, super_type=super_type, required=True
+                    type_,
+                    attr_name,
+                    _rec_classes,
+                    super_type=super_type,
+                    required=True,
                 )
             elif (
                 o_type in _collection_type_to_properties
@@ -193,6 +194,7 @@ def _type_to_properties(
                     sub_property, _, _ = _type_to_properties(
                         sub_type,
                         attr_name,
+                        _rec_classes,
                         super_type=o_type,
                         required=False,
                     )[0]
@@ -213,6 +215,7 @@ def _type_to_properties(
                     properties_and_types = _type_to_properties(
                         sub_type,
                         attr_name,
+                        _rec_classes,
                         super_type=o_type,
                         many=True,
                         required=False,
@@ -222,7 +225,11 @@ def _type_to_properties(
                 a_type = typing.get_args(type_)[0]
                 type_ = typing.Union[types.NoneType, a_type]
                 properties_and_types = _type_to_properties(
-                    sub_type, attr_name, super_type=super_type, required=True
+                    sub_type,
+                    attr_name,
+                    _rec_classes,
+                    super_type=super_type,
+                    required=True,
                 )
             elif o_type == typing.Union:
                 properties_and_types = []
@@ -237,6 +244,7 @@ def _type_to_properties(
                     sub_properties_and_types = _type_to_properties(
                         b_type,
                         attr_name,
+                        _rec_classes,
                         super_type=super_type,
                         required=False,
                         many=many,
@@ -265,10 +273,16 @@ def _type_to_properties(
                 )
             ]
         else:  # other complex type
-            node_cls = get_or_make_node_cls(type_)
+            if type_ not in _rec_classes:
+                node_cls = get_or_make_node_cls(
+                    type_, _rec_classes=_rec_classes
+                )
+                node_cls_name = node_cls.__name__
+            else:
+                node_cls_name = _make_node_cls_name(type_)
             relationship = _make_relationship(
                 neomodel.RelationshipTo,
-                node_cls_name=node_cls.__name__,
+                node_cls_name=node_cls_name,
                 attr_name=attr_name,
                 required=required,
                 many=many,
@@ -283,7 +297,7 @@ def _type_to_properties(
     return properties_and_types
 
 
-def make_node_cls_from_dataclass(cls):
+def make_node_cls_from_dataclass(cls, _rec_classes=None):
 
     def _build(
         self,
@@ -308,7 +322,9 @@ def make_node_cls_from_dataclass(cls):
         node_to_object[id(self)] = obj
         return obj
 
-    def _save_from_object(cls, obj, object_to_node=None):
+    def _save_from_object(cls, obj, object_to_node=None, _rec_classes=None):
+        if _rec_classes is None:
+            _rec_classes = set([])
         if object_to_node is not None:
             node = object_to_node.get(id(obj))
             if node is not None:
@@ -342,7 +358,9 @@ def make_node_cls_from_dataclass(cls):
                             element_value, attr_final_type
                         ):
                             element_node = save_node_from_object(
-                                element_value, object_to_node=object_to_node
+                                element_value,
+                                object_to_node=object_to_node,
+                                _rec_classes=_rec_classes,
                             )
                             to_connect[property_name].append(element_node)
                 else:
@@ -361,7 +379,9 @@ def make_node_cls_from_dataclass(cls):
         object_to_node[id(obj)] = node
         return node
 
-    node_cls_name = f"{cls.__name__}Node"
+    if _rec_classes is None:
+        _rec_classes = set([])
+    node_cls_name = _make_node_cls_name(cls)
     node_cls_metadata = {}
     node_cls_ns = {
         "__module__": __name__,
@@ -373,7 +393,9 @@ def make_node_cls_from_dataclass(cls):
     for field in dataclasses.fields(cls):
         attr_name = field.name
         attr_type = field.type
-        properties_and_types = _type_to_properties(attr_type, attr_name)
+        properties_and_types = _type_to_properties(
+            attr_type, attr_name, _rec_classes
+        )
         if attr_name in _attr_name_to_property_name:
             property_name = _attr_name_to_property_name[attr_name]
         else:
@@ -401,21 +423,26 @@ def make_node_cls_from_dataclass(cls):
                 }
     cls_bases = cls.__bases__
     node_cls_bases = []
+    optional_labels = []
     for cls_base in cls_bases:
-        node_cls_base = get_or_make_node_cls(cls_base)
-        if node_cls_base is not None:
-            node_cls_bases.append(node_cls_base)
-    if not node_cls_bases:
-        node_cls_bases = [MomapyNode]
+        node_cls_base_name = f"{cls_base.__name__}Node"
+        optional_labels.append(node_cls_base_name)
+        node_cls_ns["__optional_labels__"] = optional_labels
+    node_cls_bases = [MomapyNode]
     node_cls = type(node_cls_name, tuple(node_cls_bases), node_cls_ns)
     return node_cls
 
 
-def get_or_make_node_cls(cls, register=True):
+def get_or_make_node_cls(cls, register=True, _rec_classes=None):
+    if _rec_classes is None:
+        _rec_classes = set([])
+    _rec_classes.add(cls)
     node_cls = node_classes.get(cls)
     if node_cls is None:
         if dataclasses.is_dataclass(cls):
-            node_cls = make_node_cls_from_dataclass(cls)
+            node_cls = make_node_cls_from_dataclass(
+                cls, _rec_classes=_rec_classes
+            )
         else:
             node_cls = None
         if node_cls is not None and register:
@@ -434,22 +461,26 @@ def object_from_node(node):
     return node
 
 
-def save_node_from_object(obj, object_to_node=None):
+def save_node_from_object(obj, object_to_node=None, _rec_classes=None):
+    if _rec_classes is None:
+        _rec_classes = set([])
     if object_to_node is not None:
         node = object_to_node.get(id(obj))
         if node is not None:
             return node
     else:
         object_to_node = {}
-    node_cls = get_or_make_node_cls(type(obj))
+    node_cls = get_or_make_node_cls(type(obj), _rec_classes=_rec_classes)
     if node_cls is None:
         raise ValueError(f"could not make a node class for object {obj}")
-    node = node_cls.save_from_object(obj, object_to_node=object_to_node)
+    node = node_cls.save_from_object(
+        obj, object_to_node=object_to_node, _rec_classes=_rec_classes
+    )
     object_to_node[id(obj)] = node
     return node
 
 
-class NoneValueNode(MomapyNode):
+class NoneValueTypeNode(MomapyNode):
     _cls_to_build = momapy.drawing.NoneValueType
 
     @classmethod
@@ -465,4 +496,99 @@ class NoneValueNode(MomapyNode):
         return node
 
 
-register_node_class(NoneValueNode)
+register_node_class(NoneValueTypeNode)
+
+
+def make_doc(
+    module,
+    mode="neo4j",
+    recursive=True,
+    output_file_path=None,
+    exclude: list[type] | None = None,
+):
+
+    def _prepare_node_spec(
+        node_cls,
+        node_label_to_node_spec=None,
+        recursive=True,
+        exclude=None,
+    ):
+        if node_label_to_node_spec is None:
+            node_label_to_node_spec = {}
+        if exclude is None:
+            exclude = []
+        inherited_labels = node_cls.inherited_labels()
+        label = inherited_labels[0]
+        del inherited_labels[0]
+        properties = []
+        relationships = []
+        properties_or_relationships = (
+            momapy_kg.utils.get_properties_from_node_cls(node_cls)
+        )
+        for property_or_relationship in properties_or_relationships:
+            if property_or_relationship["type"] == "property":
+                properties.append(property_or_relationship)
+            else:
+                relationships.append(property_or_relationship)
+        node_spec = {
+            "label": label,
+            "inherited_labels": inherited_labels,
+            "properties": properties,
+            "relationships": relationships,
+        }
+        node_label_to_node_spec[label] = node_spec
+        if recursive:
+            for relationship in node_spec["relationships"]:
+                node_cls = relationship["args"]["node_cls"]
+                if (
+                    node_cls.__name__ not in node_label_to_node_spec
+                    and not any(
+                        [
+                            issubclass(node_cls._cls_to_build, excluded_cls)
+                            for excluded_cls in exclude
+                        ]
+                    )
+                ):
+                    node_label_to_node_spec = _prepare_node_spec(
+                        relationship["args"]["node_cls"],
+                        node_label_to_node_spec=node_label_to_node_spec,
+                        recursive=recursive,
+                        exclude=exclude,
+                    )
+        return node_label_to_node_spec
+
+    if exclude is None:
+        exclude = []
+    current_module_dir = pathlib.Path(__file__).parent
+    template_path = current_module_dir / "templates"
+    loader = jinja2.FileSystemLoader(template_path)
+    environment = jinja2.Environment(loader=loader)
+    environment.loader.list_templates()
+    if mode == "neo4j":
+        template = environment.get_template("doc_neo4j_model.html")
+    elif mode == "neomodel":
+        template = environment.get_template("doc_neomodel.html")
+    else:
+        raise ValueError(f"unrecognized mode {mode}")
+    node_label_to_node_spec = {}
+    for attr_name in dir(module):
+        attr_value = getattr(module, attr_name)
+        if isinstance(attr_value, type) and not any(
+            [issubclass(attr_value, excluded_cls) for excluded_cls in exclude]
+        ):
+            node_cls = get_or_make_node_cls(attr_value)
+            if (
+                node_cls is not None
+                and node_cls.__name__ not in node_label_to_node_spec
+            ):
+                node_label_to_node_spec |= _prepare_node_spec(
+                    node_cls, exclude=exclude
+                )
+    node_specs = list(node_label_to_node_spec.values())
+    node_specs.sort(key=lambda node_spec: node_spec["label"])
+    s = template.render(node_specs=node_specs)
+    if output_file_path:
+        with open(output_file_path, "w") as f:
+            f.write(s)
+    else:
+        print(s)
