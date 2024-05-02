@@ -186,6 +186,7 @@ def _type_to_properties(
                     attr_name,
                     _rec_classes,
                     super_type=super_type,
+                    many=many,
                     required=True,
                 )
             elif (
