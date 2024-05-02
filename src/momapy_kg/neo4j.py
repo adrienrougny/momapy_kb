@@ -427,6 +427,9 @@ def make_node_cls_from_dataclass(cls, _rec_classes=None):
                     suffix = final_type.__name__
                 property_name = f"{attr_name}_{suffix}"
                 node_cls_ns[property_name] = property_
+                node_cls_ns[attr_name] = (
+                    None  # since we have bases, we need to erase base property
+                )
                 node_cls_metadata[property_name] = {
                     "attr_name": attr_name,
                     "attr_type": type_,
@@ -434,12 +437,14 @@ def make_node_cls_from_dataclass(cls, _rec_classes=None):
                 }
     cls_bases = cls.__bases__
     node_cls_bases = []
-    optional_labels = []
     for cls_base in cls_bases:
-        node_cls_base_name = f"{cls_base.__name__}Node"
-        optional_labels.append(node_cls_base_name)
-        node_cls_ns["__optional_labels__"] = optional_labels
-    node_cls_bases = [MomapyNode]
+        node_cls_base = get_or_make_node_cls(
+            cls_base, _rec_classes=_rec_classes
+        )
+        if node_cls_base is not None:
+            node_cls_bases.append(node_cls_base)
+    if not node_cls_bases:
+        node_cls_bases = [MomapyNode]
     node_cls = type(node_cls_name, tuple(node_cls_bases), node_cls_ns)
     return node_cls
 
@@ -495,7 +500,9 @@ class NoneValueTypeNode(MomapyNode):
     _cls_to_build = momapy.drawing.NoneValueType
 
     @classmethod
-    def save_from_object(cls, obj, object_to_node=None):
+    def save_from_object(cls, obj, object_to_node=None, _rec_classes=None):
+        if _rec_classes is None:
+            _rec_classes = set([])
         if object_to_node is not None:
             node = object_to_node.get(id(obj))
             if node is not None:
