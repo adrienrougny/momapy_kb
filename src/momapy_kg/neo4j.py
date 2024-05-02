@@ -28,6 +28,11 @@ def delete_all():
     results, meta = neomodel.db.cypher_query("MATCH (n) DETACH DELETE n")
 
 
+def query(query_str):
+    results, meta = neomodel.db.cypher_query(query_str)
+    return results, meta
+
+
 class MomapyNode(neomodel.StructuredNode):
     _cls_to_build: typing.ClassVar[type]
     _metadata: typing.ClassVar[
