@@ -18,6 +18,16 @@ import momapy.drawing
 import momapy_kg.utils
 
 
+def connect(hostname, username, password, protocol="bolt", port="7687"):
+
+    connection_str = f"{protocol}://{username}:{password}@{hostname}:{port}"
+    neomodel.config.DATABASE_URL = connection_str
+
+
+def delete_all():
+    results, meta = neomodel.db.cypher_query("MATCH (n) DETACH DELETE n")
+
+
 class MomapyNode(neomodel.StructuredNode):
     _cls_to_build: typing.ClassVar[type]
     _metadata: typing.ClassVar[
