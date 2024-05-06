@@ -1,30 +1,35 @@
-import colorama
+import types
+import importlib
 
 import neomodel
+import colorama
 
 
-def get_properties_from_node_cls(node_cls):
-    properties = []
-    for property_name in node_cls.defined_properties():
-        property_args = {}
-        property_ = getattr(node_cls, property_name)
-        property_attrs = {
-            "name": property_name,
-            "args": property_args,
-            "obj": property_,
-        }
-        if isinstance(property_, neomodel.RelationshipTo):
-            property_attrs["obj"] = property_
-            property_attrs["type"] = "relationship"
-            property_.lookup_node_class()
-            property_args["node_cls"] = property_.definition["node_class"]
-            property_args["name"] = property_.definition["relation_type"]
-            property_args["cardinality"] = property_.manager.__name__
+def evaluate_forward_ref(forward_ref):
+    forward_module = forward_ref.__forward_module__
+    forward_arg = forward_ref.__forward_arg__
+    forward_module_name = None
+    forward_cls_name = forward_arg
+    if forward_module is not None:
+        if isinstance(forward_module, types.ModuleType):
+            forward_module_name = forward_module.__name__
+        elif isinstance(forward_module, str):
+            forward_module_name = forward_module
         else:
-            property_attrs["type"] = "property"
-            property_args["type"] = type(property_).__name__
-        properties.append(property_attrs)
-    return properties
+            raise ValueError(
+                f"module argument of {forward_ref} must be 'str' or 'types.ModuleType'"
+            )
+    else:
+        parts = forward_arg.rpartition(".")
+        if parts[1]:
+            forward_module_name = parts[0]
+            forward_cls_name = parts[2]
+    if forward_module_name:
+        forward_module = importlib.import_module(forward_module_name)
+        globals()[forward_module_name] = forward_module
+        globals()[forward_cls_name] = getattr(forward_module, forward_cls_name)
+    type_ = forward_ref._evaluate(globals(), locals(), frozenset())
+    return type_
 
 
 def pretty_print(

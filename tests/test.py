@@ -1,5 +1,6 @@
 import os
 import dataclasses
+import typing
 
 import momapy.core
 import momapy.sbgn.pd
@@ -14,7 +15,7 @@ import credentials
 @dataclasses.dataclass
 class Collection:
     name: str
-    maps: list[momapy.core.Map] = dataclasses.field(default_factory=list)
+    models: list[momapy.core.Model] = dataclasses.field(default_factory=list)
 
 
 def list_dir(path):
@@ -31,17 +32,11 @@ if __name__ == "__main__":
     )
     momapy_kg.neo4j.delete_all()
     c = Collection("PD")
-    for _, file_path in list_dir(
+    for file_name, file_path in list_dir(
         "/home/rougny/research/commute/commute_dm_develop/build/maps/pd/sbgn/"
     ):
-        print(file_path)
-        m = momapy.io.read(file_path)
-        c.maps.append(m)
-        break
+        if "MTOR" in file_name:
+            print(file_path)
+            m = momapy.io.read(file_path)
+            c.models.append(m.model)
     momapy_kg.neo4j.save_node_from_object(c)
-    # momapy_kg.neo4j.make_doc(
-    #     momapy.sbgn.pd,
-    #     mode="neomodel",
-    #     output_file_path="test.html",
-    #     exclude=[momapy.core.LayoutElement, momapy.builder.Builder],
-    # )

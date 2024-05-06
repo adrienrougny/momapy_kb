@@ -1,13 +1,12 @@
-import abc
 import dataclasses
 import typing
 import types
 import re
 import enum
-import collections
-import sys
-import importlib
 import pathlib
+import itertools
+import abc
+import sys
 
 import neomodel
 import inflect
@@ -33,80 +32,45 @@ def query(query_str):
     return results, meta
 
 
-class MomapyNode(neomodel.StructuredNode):
-    _cls_to_build: typing.ClassVar[type]
-    _metadata: typing.ClassVar[
-        dict
-    ]  # {property_name: {attr_name:, attr_type; attr_final_type:}}
-
-    @abc.abstractmethod
-    def build(
-        self,
-        inside_collections: bool = True,
-        node_to_object: dict[int, typing.Any] | None = None,
-    ):
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    def save_from_object(
-        cls,
-        obj,
-        inside_collections: bool = True,
-        omit_keys: bool = True,
-        object_to_node: dict[int, "MomapyNode"] | None = None,
-    ):
-        pass
+def _get_properties(node_cls):
+    properties = []
+    for property_name in node_cls.defined_properties():
+        property_ = getattr(node_cls, property_name)
+        if property_ is not None:
+            properties.append(property_)
+    return properties
 
 
-node_classes = {}
-
-_base_type_to_properties = {
-    int: neomodel.IntegerProperty,
-    str: neomodel.StringProperty,
-    float: neomodel.FloatProperty,
-    bool: neomodel.BooleanProperty,
-}
-
-_collection_type_to_properties = {
-    list: neomodel.ArrayProperty,
-    tuple: neomodel.ArrayProperty,
-    frozenset: neomodel.ArrayProperty,
-    set: neomodel.ArrayProperty,
-}
-
-_attr_name_to_property_name = {"id": "uid"}
-_inflect_engine = inflect.engine()
+def _is_required(property_):
+    if isinstance(property_, neomodel.Property):
+        return property_.required
+    elif isinstance(property_, neomodel.RelationshipTo):
+        if (
+            property_.manager == neomodel.One
+            or property_.manager == neomodel.OneOrMore
+        ):
+            return True
+    return False
 
 
-def _evaluate_forward_ref(forward_ref):
-    forward_module = forward_ref.__forward_module__
-    forward_arg = forward_ref.__forward_arg__
-    forward_module_name = None
-    forward_cls_name = forward_arg
-    if forward_module is not None:
-        if isinstance(forward_module, types.ModuleType):
-            forward_module_name = forward_module.__name__
-        elif isinstance(forward_module, str):
-            forward_module_name = forward_module
-        else:
-            raise ValueError(
-                f"module argument of {forward_ref} must be 'str' or 'types.ModuleType'"
-            )
-    else:
-        parts = forward_arg.rpartition(".")
-        if parts[1]:
-            forward_module_name = parts[0]
-            forward_cls_name = parts[2]
-    if forward_module_name:
-        forward_module = importlib.import_module(forward_module_name)
-        globals()[forward_module_name] = forward_module
-        globals()[forward_cls_name] = getattr(forward_module, forward_cls_name)
-    type_ = forward_ref._evaluate(globals(), locals(), frozenset())
-    return type_
+def _is_many(property_):
+    if isinstance(property_, neomodel.ArrayProperty):
+        return True
+    elif isinstance(property_, neomodel.RelationshipTo):
+        if (
+            property_.manager == neomodel.ZeroOrMore
+            or property_.manager == neomodel.OneOrMore
+        ):
+            return True
+    return False
 
 
-def _make_rtype_from_attr_name(attr_name):
+def _is_ordered(property_):
+    return hasattr(property_, "order")
+
+
+def _make_relationship_name_from_attr_name(attr_name):
+    inflect_engine = inflect.engine()
     attr_name = re.sub(
         "(.)([A-Z][a-z]+)",
         r"\1_\2",
@@ -116,7 +80,7 @@ def _make_rtype_from_attr_name(attr_name):
     plurals = attr_name.split("_")
     singulars = []
     for i, plural in enumerate(plurals):
-        singular = _inflect_engine.singular_noun(
+        singular = inflect_engine.singular_noun(
             plural
         )  # returns False if already singular
         if singular and singular != plural:
@@ -130,396 +94,571 @@ def _make_rtype_from_attr_name(attr_name):
     return rtype
 
 
-def _make_node_cls_name(cls):
-    node_cls_name = f"{cls.__name__}Node"
-    return node_cls_name
+class _OrderedRelationshipTo(neomodel.StructuredRel):
+    order = neomodel.IntegerProperty(required=True)
 
 
-def _make_relationship(
-    relationship_cls, node_cls_name, attr_name, required=True, many=False
-):
-    rtype = _make_rtype_from_attr_name(attr_name)
-    if many:
-        if required:
-            cardinality = neomodel.OneOrMore
-        else:
-            cardinality = neomodel.ZeroOrMore
-    else:
-        if required:
-            cardinality = neomodel.One
-        else:
-            cardinality = neomodel.ZeroOrOne
-    relationship = relationship_cls(
-        node_cls_name,
-        rtype,
-        cardinality=cardinality,
-    )
-    return relationship
-
-
-def _make_property(property_cls, sub_property=None, required=True):
-    property_ = property_cls(sub_property, required=required)
-    return property_
-
-
-def _type_to_properties(
-    type_, attr_name, _rec_classes, super_type=None, required=True, many=False
-):
-    """
-    ForwardRef(type)->
-    """
-    properties_and_types = []
-    if isinstance(type_, typing.ForwardRef):
-        type_ = _evaluate_forward_ref(type_)
-        return _type_to_properties(
-            type_,
-            attr_name,
-            _rec_classes,
-            super_type=super_type,
-            required=required,
-            many=many,
-        )
-    # We get the origin of type_, e.g., if type_ = X[Y, Z, ...] we get X
-    o_type = typing.get_origin(type_)  # returns None if not supported
-    if o_type is not None:
-        if isinstance(o_type, type):  # o_type is a type
-            if o_type == types.UnionType:  # from t1 | t2 | ... syntax
-                a_types = typing.get_args(type_)
-                type_ = typing.Union[tuple(a_types)]
-                properties_and_types = _type_to_properties(
-                    type_,
-                    attr_name,
-                    _rec_classes,
-                    super_type=super_type,
-                    many=many,
-                    required=True,
-                )
-            elif (
-                o_type in _collection_type_to_properties
-            ):  # a supported collection
-                a_types = typing.get_args(type_)
-                if (
-                    len(a_types) != 1
-                ):  # we want type_ to have only one subtype (e.g., list[t], tuple[t])
-                    raise ValueError(
-                        f"transformation of type {type_} is not supported"
-                    )
-                sub_type = a_types[0]
-                # if sub_type is str, float, int, bool
-                if sub_type in _base_type_to_properties:
-                    sub_property, _, _ = _type_to_properties(
-                        sub_type,
-                        attr_name,
-                        _rec_classes,
-                        super_type=o_type,
-                        required=False,
-                    )[0]
-                    property_cls = _collection_type_to_properties[o_type]
-                    property_ = _make_property(
-                        property_cls,
-                        sub_property=sub_property,
-                        required=required,
-                    )
-                    properties_and_types = [
-                        (
-                            property_,
-                            o_type,
-                            sub_type,
-                        )
-                    ]
-                else:
-                    properties_and_types = _type_to_properties(
-                        sub_type,
-                        attr_name,
-                        _rec_classes,
-                        super_type=o_type,
-                        many=True,
-                        required=False,
-                    )
-        else:  # o_type is a special form from typing
-            if o_type == typing.Optional:  # typing.Optional has a unique arg
-                a_type = typing.get_args(type_)[0]
-                type_ = typing.Union[types.NoneType, a_type]
-                properties_and_types = _type_to_properties(
-                    sub_type,
-                    attr_name,
-                    _rec_classes,
-                    super_type=super_type,
-                    required=True,
-                )
-            elif o_type == typing.Union:
-                properties_and_types = []
-                a_types = typing.get_args(type_)
-                b_types = []
-                for a_type in a_types:
-                    if a_type == types.NoneType:
-                        required = False
-                    else:
-                        b_types.append(a_type)
-                for b_type in b_types:
-                    sub_properties_and_types = _type_to_properties(
-                        b_type,
-                        attr_name,
-                        _rec_classes,
-                        super_type=super_type,
-                        required=False,
-                        many=many,
-                    )
-                    properties_and_types += sub_properties_and_types
-    else:  # no o_type
-        property_cls = _base_type_to_properties.get(type_)
-        if property_cls is not None:  # base type
-            property_ = _make_property(property_cls, required=required)
-            properties_and_types = [
-                (
-                    property_,
-                    super_type,
-                    type_,
-                )
-            ]
-        elif issubclass(type_, enum.Enum):
-            property_ = _make_property(
-                neomodel.StringProperty, required=required
-            )
-            properties_and_types = [
-                (
-                    property_,
-                    super_type,
-                    type_,
-                )
-            ]
-        else:  # other complex type
-            if type_ not in _rec_classes:
-                node_cls = get_or_make_node_cls(
-                    type_, _rec_classes=_rec_classes
-                )
-                node_cls_name = node_cls.__name__
+def _get_transform_func_from_rules(rules, cls):
+    transform_func = None
+    for rule in rules:
+        condition = rule[0]
+        if isinstance(condition, type) or isinstance(condition, tuple):
+            if isinstance(cls, type):
+                evaluation = issubclass(cls, condition)
             else:
-                node_cls_name = _make_node_cls_name(type_)
-            relationship = _make_relationship(
-                neomodel.RelationshipTo,
-                node_cls_name=node_cls_name,
-                attr_name=attr_name,
+                continue
+        else:
+            evaluation = condition(cls)
+        if evaluation:
+            transform_func = rule[1]
+    return transform_func
+
+
+def _final_types_from_basetype(
+    type_, required=True, many=False, ordered=False, in_collection=False
+):
+    return [
+        (
+            type_,
+            required,
+            many,
+            ordered,
+        )
+    ]
+
+
+def _final_types_from_forwardref(
+    type_, required=True, many=False, ordered=False, in_collection=False
+):
+    type_ = momapy_kg.utils.evaluate_forward_ref(type_)
+    return _final_types_from_type(
+        type_,
+        required=required,
+        many=many,
+        ordered=ordered,
+        in_collection=in_collection,
+    )
+
+
+def _final_types_from_collection(
+    type_, required=True, many=False, ordered=False, in_collection=False
+):
+    type_origin = typing.get_origin(type_)
+    type_args = typing.get_args(type_)
+    type_arg = type_args[0]
+    many = True
+    if type_origin in [list, tuple]:
+        ordered = True
+    else:
+        ordered = False
+    return _final_types_from_type(
+        type_arg,
+        required=required,
+        many=many,
+        ordered=ordered,
+        in_collection=True,
+    )
+
+
+def _final_types_from_union(
+    type_, required=True, many=False, ordered=False, in_collection=False
+):
+    type_args = typing.get_args(type_)
+    type_args_not_none = []
+    for type_arg in type_args:
+        if type_arg is types.NoneType:
+            if not in_collection:
+                required = False
+        else:
+            type_args_not_none.append(type_arg)
+    return itertools.chain.from_iterable(
+        [
+            _final_types_from_type(
+                type_arg,
                 required=required,
                 many=many,
+                ordered=ordered,
+                in_collection=False,
             )
-            properties_and_types = [
-                (
-                    relationship,
-                    super_type,
-                    type_,
-                )
-            ]
-    return properties_and_types
-
-
-def make_node_cls_from_dataclass(cls, _rec_classes=None):
-
-    def _build(
-        self,
-        inside_collections: bool = True,
-        node_to_object: dict[int, typing.Any] | None = None,
-    ):
-        if node_to_object is not None:
-            obj = node_to_object.get(id(self))
-            if obj is not None:
-                return obj
-        else:
-            node_to_object = {}
-        args = {}
-        for field in dataclasses.fields(self._cls_to_build):
-            attr_value = getattr(self, field.name)
-            args[field.name] = object_from_node(
-                node=attr_value,
-                inside_collections=inside_collections,
-                node_to_object=node_to_object,
-            )
-        obj = self._cls_to_build(**args)
-        node_to_object[id(self)] = obj
-        return obj
-
-    def _save_from_object(cls, obj, object_to_node=None, _rec_classes=None):
-        if _rec_classes is None:
-            _rec_classes = set([])
-        if object_to_node is not None:
-            node = object_to_node.get(id(obj))
-            if node is not None:
-                return node
-        else:
-            object_to_node = {}
-        args = {}
-        to_connect = collections.defaultdict(list)
-        properties = momapy_kg.utils.get_properties_from_node_cls(cls)
-        for property_ in properties:
-            property_name = property_["name"]
-            if property_name in cls._metadata:
-                property_metadata = cls._metadata[property_name]
-                attr_name = property_metadata["attr_name"]
-                attr_type = property_metadata["attr_type"]
-                attr_final_type = property_metadata["attr_final_type"]
-            else:
-                attr_name = property_name
-                attr_type = None
-                attr_final_type = None
-            attr_value = getattr(obj, attr_name)
-            if attr_type is None or isinstance(attr_value, attr_type):
-                if property_["type"] == "relationship":
-                    cardinality = property_["args"]["cardinality"]
-                    if cardinality.endswith("OrMore"):
-                        element_values = attr_value
-                    else:
-                        element_values = [attr_value]
-                    for element_value in element_values:
-                        if attr_final_type is None or isinstance(
-                            element_value, attr_final_type
-                        ):
-                            element_node = save_node_from_object(
-                                element_value,
-                                object_to_node=object_to_node,
-                                _rec_classes=_rec_classes,
-                            )
-                            to_connect[property_name].append(element_node)
-                else:
-                    if attr_final_type is None or isinstance(
-                        attr_value, attr_final_type
-                    ):
-                        if isinstance(attr_value, enum.Enum):
-                            attr_value = f"{type(attr_value).__name__}.{attr_value.name}"
-                        args[property_name] = attr_value
-        node = cls(**args)
-        node.save()
-        for property_name, element_nodes in to_connect.items():
-            for element_node in element_nodes:
-                if element_node is not None:
-                    getattr(node, property_name).connect(element_node)
-        object_to_node[id(obj)] = node
-        return node
-
-    if _rec_classes is None:
-        _rec_classes = set([])
-    node_cls_name = _make_node_cls_name(cls)
-    node_cls_metadata = {}
-    node_cls_ns = {
-        "__module__": __name__,
-        "_cls_to_build": cls,
-        "_metadata": node_cls_metadata,
-        "build": _build,
-        "save_from_object": classmethod(_save_from_object),
-    }
-    for field in dataclasses.fields(cls):
-        attr_name = field.name
-        attr_type = field.type
-        properties_and_types = _type_to_properties(
-            attr_type, attr_name, _rec_classes
-        )
-        if attr_name in _attr_name_to_property_name:
-            property_name = _attr_name_to_property_name[attr_name]
-        else:
-            property_name = attr_name
-        if len(properties_and_types) == 1:
-            property_, type_, final_type = properties_and_types[0]
-            node_cls_ns[property_name] = property_
-            node_cls_metadata[property_name] = {
-                "attr_name": attr_name,
-                "attr_type": type_,
-                "attr_final_type": final_type,
-            }
-        else:
-            for property_, type_, final_type in properties_and_types:
-                if type_ is not None:
-                    suffix = f"{type_.__name__}_{final_type.__name__}"
-                else:
-                    suffix = final_type.__name__
-                property_name = f"{attr_name}_{suffix}"
-                node_cls_ns[property_name] = property_
-                node_cls_ns[attr_name] = (
-                    None  # since we have bases, we need to erase base property
-                )
-                node_cls_metadata[property_name] = {
-                    "attr_name": attr_name,
-                    "attr_type": type_,
-                    "attr_final_type": final_type,
-                }
-    cls_bases = cls.__bases__
-    node_cls_bases = []
-    for cls_base in cls_bases:
-        node_cls_base = get_or_make_node_cls(
-            cls_base, _rec_classes=_rec_classes
-        )
-        if node_cls_base is not None:
-            node_cls_bases.append(node_cls_base)
-    if not node_cls_bases:
-        node_cls_bases = [MomapyNode]
-    node_cls = type(node_cls_name, tuple(node_cls_bases), node_cls_ns)
-    return node_cls
-
-
-def get_or_make_node_cls(cls, register=True, _rec_classes=None):
-    if _rec_classes is None:
-        _rec_classes = set([])
-    _rec_classes.add(cls)
-    node_cls = node_classes.get(cls)
-    if node_cls is None:
-        if dataclasses.is_dataclass(cls):
-            node_cls = make_node_cls_from_dataclass(
-                cls, _rec_classes=_rec_classes
-            )
-        else:
-            node_cls = None
-        if node_cls is not None and register:
-            register_node_class(node_cls)
-    return node_cls
-
-
-def register_node_class(node_cls):
-    node_classes[node_cls._cls_to_build] = node_cls
-    setattr(sys.modules[__name__], node_cls.__name__, node_cls)
-
-
-def object_from_node(node):
-    if hasattr(node, "build"):
-        return node.build()
-    return node
-
-
-def save_node_from_object(obj, object_to_node=None, _rec_classes=None):
-    if _rec_classes is None:
-        _rec_classes = set([])
-    if object_to_node is not None:
-        node = object_to_node.get(id(obj))
-        if node is not None:
-            return node
-    else:
-        object_to_node = {}
-    node_cls = get_or_make_node_cls(type(obj), _rec_classes=_rec_classes)
-    if node_cls is None:
-        raise ValueError(f"could not make a node class for object {obj}")
-    node = node_cls.save_from_object(
-        obj, object_to_node=object_to_node, _rec_classes=_rec_classes
+            for type_arg in type_args_not_none
+        ]
     )
-    object_to_node[id(obj)] = node
+
+
+def _final_types_from_uniontype(
+    type_, required=True, many=False, ordered=False, in_collection=False
+):
+    type_args = typing.get_args(type_)
+    type_ = typing.Union[tuple(type_args)]
+    return _final_types_from_type(
+        type_,
+        required=required,
+        many=many,
+        ordered=ordered,
+        in_collection=in_collection,
+    )
+
+
+def _final_types_from_optional(
+    type_, required=True, many=False, ordered=False, in_collection=False
+):
+    type_args = typing.get_args(type_)
+    type_arg = type_args[0]
+    return _final_types_from_type(
+        type_arg,
+        required=False,
+        many=many,
+        ordered=ordered,
+        in_collection=in_collection,
+    )
+
+
+_final_types_from_type_rules = [
+    (
+        (str, int, float, bool, momapy.drawing.NoneValueType, enum.Enum),
+        _final_types_from_basetype,
+    ),
+    (
+        lambda type_: isinstance(type_, typing.ForwardRef),
+        _final_types_from_forwardref,
+    ),
+    (dataclasses.is_dataclass, _final_types_from_basetype),
+    (
+        lambda type_: typing.get_origin(type_)
+        in [list, tuple, set, frozenset],
+        _final_types_from_collection,
+    ),
+    (
+        lambda type_: typing.get_origin(type_) is typing.Union,
+        _final_types_from_union,
+    ),
+    (
+        lambda type_: typing.get_origin(type_) is types.UnionType,
+        _final_types_from_uniontype,
+    ),
+    (
+        lambda type_: typing.get_origin(type_) is typing.Optional,
+        _final_types_from_optional,
+    ),
+]
+
+
+def _final_types_from_type(
+    type_, required=True, many=False, ordered=False, in_collection=False
+):
+    transform_func = _get_transform_func_from_rules(
+        _final_types_from_type_rules, type_
+    )
+    if transform_func is None:
+        raise ValueError(f"unsupported type {type_}")
+    return transform_func(
+        type_,
+        required=required,
+        many=many,
+        ordered=ordered,
+        in_collection=in_collection,
+    )
+
+
+def _node_cls_property_from_str(
+    type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
+):
+    if many:
+        return neomodel.ArrayProperty(neomodel.StringProperty())
+    else:
+        return neomodel.StringProperty(required=required)
+
+
+def _node_cls_property_from_int(
+    type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
+):
+    if many:
+        return neomodel.ArrayProperty(neomodel.IntegerProperty())
+    else:
+        return neomodel.IntegerProperty(required=required)
+
+
+def _node_cls_property_from_float(
+    type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
+):
+    if many:
+        return neomodel.ArrayProperty(neomodel.FloatProperty())
+    else:
+        return neomodel.FloatProperty(required=required)
+
+
+def _node_cls_property_from_bool(
+    type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
+):
+    if many:
+        return neomodel.ArrayProperty(neomodel.BooleanProperty())
+    else:
+        return neomodel.BooleanProperty(required=required)
+
+
+def _node_cls_property_from_enum(
+    type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
+):
+    return _node_cls_property_from_str(
+        type_, attr_name, required=required, many=many, ordered=ordered
+    )
+
+
+def _node_cls_property_from_none_value_type(
+    type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
+):
+    return _node_cls_property_from_str(
+        type_, attr_name, required=required, many=many, ordered=ordered
+    )
+
+
+def _node_cls_property_from_dataclass(
+    type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
+):
+    if _ongoing is None:
+        _ongoing = set([])
+    if type_ in _cls_to_node_cls or type_ not in _ongoing:
+        node_cls = _node_cls_from_cls(type_, _ongoing=_ongoing)
+        _ongoing.add(type_.__name__)
+    else:
+        node_cls = _node_cls_name_from_cls_name(type_.__name__)
+    # if we are already in the process of making the node class, we use a
+    # reference of it
+    relationship_name = _make_relationship_name_from_attr_name(attr_name)
+    if required:
+        if many:
+            cardinality = neomodel.OneOrMore
+        else:
+            cardinality = neomodel.One
+    else:
+        if many:
+            cardinality = neomodel.ZeroOrMore
+        else:
+            cardinality = neomodel.ZeroOrOne
+    if ordered:
+        model = _OrderedRelationshipTo
+    else:
+        model = neomodel.StructuredRel
+    node_cls_property = neomodel.RelationshipTo(
+        node_cls, relationship_name, cardinality=cardinality, model=model
+    )
+    return node_cls_property
+
+
+_node_cls_property_from_final_type_rules = [
+    (str, _node_cls_property_from_str),
+    (int, _node_cls_property_from_int),
+    (float, _node_cls_property_from_float),
+    (bool, _node_cls_property_from_bool),
+    (enum.Enum, _node_cls_property_from_enum),
+    (momapy.drawing.NoneValueType, _node_cls_property_from_none_value_type),
+    (dataclasses.is_dataclass, _node_cls_property_from_dataclass),
+]
+
+
+def _node_cls_property_from_final_type(
+    type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
+):
+    if _ongoing is None:
+        _ongoing = set([])
+    transform_func = _get_transform_func_from_rules(
+        _node_cls_property_from_final_type_rules, type_
+    )
+    if transform_func is None:
+        raise ValueError(
+            f"could not get transformation function for type {type_}"
+        )
+    node_cls_property = transform_func(
+        type_,
+        attr_name,
+        required=required,
+        many=many,
+        ordered=ordered,
+        _ongoing=_ongoing,
+    )
+    return node_cls_property
+
+
+def _node_cls_property_name_from_attr_name(attr_name):
+    if attr_name == "id":
+        return "uid"
+    return attr_name
+
+
+def _node_cls_properties_from_type(attr_type, attr_name, _ongoing=None):
+    if _ongoing is None:
+        _ongoing = set([])
+    node_cls_properties = []
+    for final_type, required, many, ordered in _final_types_from_type(
+        attr_type
+    ):
+        node_cls_property = _node_cls_property_from_final_type(
+            final_type,
+            attr_name,
+            required=required,
+            many=many,
+            ordered=ordered,
+            _ongoing=_ongoing,
+        )
+        node_cls_property.attr_name = attr_name
+        node_cls_property.final_type = final_type
+        node_cls_properties.append(node_cls_property)
+    if len(node_cls_properties) > 1:
+        for node_cls_property in node_cls_properties:
+            node_cls_property.name = (
+                f"{_node_cls_property_name_from_attr_name(node_cls_property.attr_name)}_"
+                f"{node_cls_property.final_type.__name__}"
+            )
+    else:
+        node_cls_properties[0].name = _node_cls_property_name_from_attr_name(
+            attr_name
+        )
+    return node_cls_properties
+
+
+class MomapyNode(neomodel.StructuredNode):
+    pass
+
+
+class StringNode(MomapyNode):
+    _cls_to_build = str
+    value = neomodel.StringProperty(required=True)
+
+
+class IntegerNode(MomapyNode):
+    _cls_to_build = int
+    value = neomodel.IntegerProperty(required=True)
+
+
+class FloatNode(MomapyNode):
+    _cls_to_build = float
+    value = neomodel.FloatProperty(required=True)
+
+
+class BooleanNode(MomapyNode):
+    _cls_to_build = bool
+    value = neomodel.BooleanProperty(required=True)
+
+
+_cls_to_node_cls = {
+    str: StringNode,
+    int: IntegerNode,
+    float: FloatNode,
+    bool: BooleanNode,
+}
+
+
+def _node_cls_name_from_cls_name(cls_name):
+    return f"{cls_name}Node"
+
+
+def _node_cls_from_basetype(cls, _ongoing=None):
+    return _cls_to_node_cls[cls]
+
+
+def _node_cls_from_dataclass(cls, _ongoing=None):
+    if _ongoing is None:
+        _ongoing = set([])
+    # print(f"Transforming {cls} to node class")
+    node_cls = _cls_to_node_cls.get(cls)
+    if node_cls is not None:
+        # print(f"{cls} already transformed to {node_cls}")
+        return node_cls
+    node_cls_name = _node_cls_name_from_cls_name(cls.__name__)
+    node_cls_ns = {"_cls_to_build": cls}
+    for field in dataclasses.fields(cls):
+        node_cls_properties = _node_cls_properties_from_type(
+            field.type, field.name, _ongoing=_ongoing
+        )
+        for node_cls_property in node_cls_properties:
+            node_cls_ns[node_cls_property.name] = node_cls_property
+            # we make sure potential more general parent properties are not made
+            if (
+                node_cls_property.name
+                != _node_cls_property_name_from_attr_name(
+                    node_cls_property.attr_name
+                )
+            ):
+                node_cls_ns[node_cls_property.attr_name] = None
+    cls_bases = cls.__bases__
+    node_cls_bases = tuple(
+        [
+            _node_cls_from_cls(cls_base, _ongoing=_ongoing)
+            for cls_base in cls_bases
+            if cls_base
+            not in (
+                object,
+                abc.ABC,
+            )
+        ]
+    )
+    if not node_cls_bases:
+        node_cls_bases = tuple([MomapyNode])
+    node_cls = type(node_cls_name, node_cls_bases, node_cls_ns)
+    _cls_to_node_cls[cls] = node_cls
+    setattr(sys.modules[__name__], node_cls.__name__, node_cls)
+    # print(f"{cls} transformed to {node_cls}")
+    return node_cls
+
+
+_node_cls_from_cls_rules = [
+    (
+        (str, int, float, bool),
+        _node_cls_from_basetype,
+    ),
+    (
+        dataclasses.is_dataclass,
+        _node_cls_from_dataclass,
+    ),
+]
+
+
+def _node_cls_from_cls(cls, _ongoing=None):
+    if _ongoing is None:
+        _ongoing = set([])
+    _ongoing.add(cls)
+    transform_func = _get_transform_func_from_rules(
+        _node_cls_from_cls_rules, cls
+    )
+    if transform_func is None:
+        raise ValueError(
+            f"could not get transformation function for class {cls}"
+        )
+    node_cls = transform_func(cls, _ongoing=_ongoing)
+    return node_cls
+
+
+def _node_attr_value_from_basetype_object(obj):
+    return obj
+
+
+def _node_attr_value_from_collection_object(obj):
+    return [_node_attr_value_from_object(element) for element in obj]
+
+
+def _node_attr_value_from_dataclass_object(obj):
+    node = save_node_from_object(obj)
     return node
 
 
-class NoneValueTypeNode(MomapyNode):
-    _cls_to_build = momapy.drawing.NoneValueType
-
-    @classmethod
-    def save_from_object(cls, obj, object_to_node=None, _rec_classes=None):
-        if _rec_classes is None:
-            _rec_classes = set([])
-        if object_to_node is not None:
-            node = object_to_node.get(id(obj))
-            if node is not None:
-                return node
-        else:
-            object_to_node = {}
-        node = cls()
-        node.save()
-        return node
+def _node_attr_value_from_enum_object(obj) -> str:
+    return f"{type(obj)}.{obj.name}"
 
 
-register_node_class(NoneValueTypeNode)
+def _node_attr_value_from_none_value_object(obj) -> str:
+    return "none"
+
+
+_node_attr_value_from_object_rules = [
+    (
+        (str, int, float, bool, types.NoneType),
+        _node_attr_value_from_basetype_object,
+    ),
+    ((list, tuple, set, frozenset), _node_attr_value_from_collection_object),
+    (enum.Enum, _node_attr_value_from_enum_object),
+    (momapy.drawing.NoneValueType, _node_attr_value_from_none_value_object),
+    (dataclasses.is_dataclass, _node_attr_value_from_dataclass_object),
+]
+
+
+def _node_attr_value_from_object(obj):
+    transform_func = _get_transform_func_from_rules(
+        _node_attr_value_from_object_rules, type(obj)
+    )
+    if transform_func is None:
+        raise ValueError(
+            f"could not get transformation function for object of type {type(obj)}"
+        )
+    attr_value = transform_func(obj)
+    return attr_value
+
+
+def _save_node_from_basetype_object(obj):
+    node_cls = _node_cls_from_cls(type(obj))
+    node = node_cls(value=obj)
+    node.save()
+    return node
+
+
+def _save_node_from_enum_object(obj):
+    node_cls = _node_cls_from_cls(type(obj))
+    node = node_cls(
+        name=obj.name,
+        value=str(obj.value),
+    )
+    node.save()
+    return node
+
+
+def _save_node_from_dataclass_object(obj) -> neomodel.StructuredNode:
+    node_cls = _node_cls_from_cls(type(obj))
+    kwargs = {}
+    to_connect = []
+    for node_cls_property in _get_properties(node_cls):
+        node_attr_name = node_cls_property.name
+        obj_attr_name = node_cls_property.attr_name
+        obj_attr_value = getattr(obj, obj_attr_name)
+        node_attr_value = _node_attr_value_from_object(obj_attr_value)
+        if (
+            node_attr_value is not None
+        ):  # as a consequence, cannot distinguish [] from None if type is list | None
+            if isinstance(node_cls_property, neomodel.RelationshipTo):
+                if _is_many(node_cls_property):
+                    for i, node_attr_element_value in enumerate(
+                        node_attr_value
+                    ):
+                        if issubclass(
+                            type(node_attr_element_value)._cls_to_build,
+                            node_cls_property.final_type,
+                        ):
+                            to_connect.append(
+                                (
+                                    node_attr_name,
+                                    node_attr_element_value,
+                                    {"order": i},
+                                )
+                            )
+                else:
+                    if issubclass(
+                        type(node_attr_value)._cls_to_build,
+                        node_cls_property.final_type,
+                    ):
+                        to_connect.append(
+                            (node_attr_name, node_attr_value, {})
+                        )
+            else:
+                kwargs[node_attr_name] = node_attr_value
+    node = node_cls(**kwargs)
+    node.save()
+    for (
+        node_attr_name,
+        node_attr_value,
+        relationship_properties,
+    ) in to_connect:
+        getattr(node, node_attr_name).connect(
+            node_attr_value, relationship_properties
+        )
+    return node
+
+
+_save_node_from_object_rules = [
+    ((str, int, float, bool), _save_node_from_basetype_object),
+    (enum.Enum, _save_node_from_enum_object),
+    (dataclasses.is_dataclass, _save_node_from_dataclass_object),
+]
+
+
+def save_node_from_object(obj):
+    # print(f"Saving object of type {type(obj)} to node")
+    transform_func = _get_transform_func_from_rules(
+        _save_node_from_object_rules, type(obj)
+    )
+    if transform_func is None:
+        raise ValueError(
+            f"could not get transformation function for object of type {type(obj)}"
+        )
+    node = transform_func(obj)
+    return node
 
 
 def make_doc(
@@ -599,7 +738,7 @@ def make_doc(
         if isinstance(attr_value, type) and not any(
             [issubclass(attr_value, excluded_cls) for excluded_cls in exclude]
         ):
-            node_cls = get_or_make_node_cls(attr_value)
+            node_cls = _node_cls_from_cls(attr_value)
             if (
                 node_cls is not None
                 and node_cls.__name__ not in node_label_to_node_spec
