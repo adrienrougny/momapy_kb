@@ -528,24 +528,34 @@ def _node_cls_from_cls(cls, _ongoing=None):
     return node_cls
 
 
-def _node_attr_value_from_basetype_object(obj):
+def _node_attr_value_from_basetype_object(obj, object_to_node=None):
+    if object_to_node is None:
+        object_to_node = {}
     return obj
 
 
-def _node_attr_value_from_collection_object(obj):
+def _node_attr_value_from_collection_object(obj, object_to_node=None):
+    if object_to_node is None:
+        object_to_node = {}
     return [_node_attr_value_from_object(element) for element in obj]
 
 
-def _node_attr_value_from_dataclass_object(obj):
-    node = save_node_from_object(obj)
+def _node_attr_value_from_dataclass_object(obj, object_to_node=None):
+    if object_to_node is None:
+        object_to_node = {}
+    node = save_node_from_object(obj, object_to_node=object_to_node)
     return node
 
 
-def _node_attr_value_from_enum_object(obj) -> str:
-    return f"{type(obj)}.{obj.name}"
+def _node_attr_value_from_enum_object(obj, object_to_node=None) -> str:
+    if object_to_node is None:
+        object_to_node = {}
+    return f"{type(obj).__name__}.{obj.name}"
 
 
-def _node_attr_value_from_none_value_object(obj) -> str:
+def _node_attr_value_from_none_value_object(obj, object_to_node=None) -> str:
+    if object_to_node is None:
+        object_to_node = {}
     return "none"
 
 
@@ -561,7 +571,9 @@ _node_attr_value_from_object_rules = [
 ]
 
 
-def _node_attr_value_from_object(obj):
+def _node_attr_value_from_object(obj, object_to_node=None):
+    if object_to_node is None:
+        object_to_node = {}
     transform_func = _get_transform_func_from_rules(
         _node_attr_value_from_object_rules, type(obj)
     )
@@ -569,18 +581,22 @@ def _node_attr_value_from_object(obj):
         raise ValueError(
             f"could not get transformation function for object of type {type(obj)}"
         )
-    attr_value = transform_func(obj)
+    attr_value = transform_func(obj, object_to_node=object_to_node)
     return attr_value
 
 
-def _save_node_from_basetype_object(obj):
+def _save_node_from_basetype_object(obj, object_to_node=None):
+    if object_to_node is None:
+        object_to_node = {}
     node_cls = _node_cls_from_cls(type(obj))
     node = node_cls(value=obj)
     node.save()
     return node
 
 
-def _save_node_from_enum_object(obj):
+def _save_node_from_enum_object(obj, object_to_node=None):
+    if object_to_node is None:
+        object_to_node = {}
     node_cls = _node_cls_from_cls(type(obj))
     node = node_cls(
         name=obj.name,
@@ -590,7 +606,11 @@ def _save_node_from_enum_object(obj):
     return node
 
 
-def _save_node_from_dataclass_object(obj) -> neomodel.StructuredNode:
+def _save_node_from_dataclass_object(
+    obj, object_to_node=None
+) -> neomodel.StructuredNode:
+    if object_to_node is None:
+        object_to_node = {}
     node_cls = _node_cls_from_cls(type(obj))
     kwargs = {}
     to_connect = []
@@ -598,7 +618,9 @@ def _save_node_from_dataclass_object(obj) -> neomodel.StructuredNode:
         node_attr_name = node_cls_property.name
         obj_attr_name = node_cls_property.attr_name
         obj_attr_value = getattr(obj, obj_attr_name)
-        node_attr_value = _node_attr_value_from_object(obj_attr_value)
+        node_attr_value = _node_attr_value_from_object(
+            obj_attr_value, object_to_node=object_to_node
+        )
         if (
             node_attr_value is not None
         ):  # as a consequence, cannot distinguish [] from None if type is list | None
@@ -648,7 +670,12 @@ _save_node_from_object_rules = [
 ]
 
 
-def save_node_from_object(obj):
+def save_node_from_object(obj, object_to_node=None):
+    if object_to_node is None:
+        object_to_node = {}
+    node = object_to_node.get(id(obj))
+    if node is not None:
+        return node
     # print(f"Saving object of type {type(obj)} to node")
     transform_func = _get_transform_func_from_rules(
         _save_node_from_object_rules, type(obj)
@@ -657,7 +684,8 @@ def save_node_from_object(obj):
         raise ValueError(
             f"could not get transformation function for object of type {type(obj)}"
         )
-    node = transform_func(obj)
+    node = transform_func(obj, object_to_node=object_to_node)
+    object_to_node[id(obj)] = node
     return node
 
 
