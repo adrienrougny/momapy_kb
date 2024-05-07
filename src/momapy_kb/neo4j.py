@@ -14,7 +14,7 @@ import jinja2
 
 import momapy.drawing
 
-import momapy_kg.utils
+import momapy_kb.utils
 
 
 def connect(hostname, username, password, protocol="bolt", port="7687"):
@@ -130,7 +130,7 @@ def _final_types_from_basetype(
 def _final_types_from_forwardref(
     type_, required=True, many=False, ordered=False, in_collection=False
 ):
-    type_ = momapy_kg.utils.evaluate_forward_ref(type_)
+    type_ = momapy_kb.utils.evaluate_forward_ref(type_)
     return _final_types_from_type(
         type_,
         required=required,
@@ -713,7 +713,7 @@ def make_doc(
         properties = []
         relationships = []
         properties_or_relationships = (
-            momapy_kg.utils.get_properties_from_node_cls(node_cls)
+            momapy_kb.utils.get_properties_from_node_cls(node_cls)
         )
         for property_or_relationship in properties_or_relationships:
             if property_or_relationship["type"] == "property":

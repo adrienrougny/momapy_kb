@@ -1,7 +1,7 @@
 [project]
-name = "momapy_kg"
+name = "momapy_kb"
 version = "0.1.0"
-description = "Momapy maps to KG"
+description = "Momapy maps to KB"
 authors = [
     {name = "Adrien Rougny", email = "adrienrougny@gmail.com"},
 ]
