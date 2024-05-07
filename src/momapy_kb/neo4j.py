@@ -612,7 +612,12 @@ def _node_attr_value_from_object(
         raise ValueError(
             f"could not get transformation function for object of type {type(obj)}"
         )
-    attr_value = transform_func(obj, object_to_node=object_to_node)
+    attr_value = transform_func(
+        obj,
+        object_to_node=object_to_node,
+        object_to_node_mode=object_to_node_mode,
+        object_to_node_exclude=object_to_node_exclude,
+    )
     return attr_value
 
 
@@ -660,7 +665,7 @@ def _save_node_from_dataclass_object(
             obj_attr_value,
             object_to_node=object_to_node,
             object_to_node_mode=object_to_node_mode,
-            object_to_node_exclude=object_to_node,
+            object_to_node_exclude=object_to_node_exclude,
         )
         if (
             node_attr_value is not None
@@ -726,8 +731,8 @@ def save_node_from_object(
             node = object_to_node.get(id(obj))
         elif object_to_node_mode == "hash":
             node = object_to_node.get(obj)
-    if node is not None:
-        return node
+        if node is not None:
+            return node
     # print(f"Saving object of type {type(obj)} to node")
     transform_func = _get_transform_func_from_rules(
         _save_node_from_object_rules, type(obj)
@@ -736,12 +741,17 @@ def save_node_from_object(
         raise ValueError(
             f"could not get transformation function for object of type {type(obj)}"
         )
-    node = transform_func(obj, object_to_node=object_to_node)
+    node = transform_func(
+        obj,
+        object_to_node=object_to_node,
+        object_to_node_mode=object_to_node_mode,
+        object_to_node_exclude=object_to_node_exclude,
+    )
     if not isinstance(obj, object_to_node_exclude):
         if object_to_node_mode == "id":
-            object_to_node[id(obj)]
+            object_to_node[id(obj)] = node
         elif object_to_node_mode == "hash":
-            object_to_node[obj]
+            object_to_node[obj] = node
     return node
 
 
