@@ -416,26 +416,26 @@ def _node_cls_properties_from_type(attr_type, attr_name, _ongoing=None):
     return node_cls_properties
 
 
-class MomapyNode(neomodel.StructuredNode):
+class MomapyKBNode(neomodel.StructuredNode):
     pass
 
 
-class StringNode(MomapyNode):
+class StringNode(MomapyKBNode):
     _cls_to_build = str
     value = neomodel.StringProperty(required=True)
 
 
-class IntegerNode(MomapyNode):
+class IntegerNode(MomapyKBNode):
     _cls_to_build = int
     value = neomodel.IntegerProperty(required=True)
 
 
-class FloatNode(MomapyNode):
+class FloatNode(MomapyKBNode):
     _cls_to_build = float
     value = neomodel.FloatProperty(required=True)
 
 
-class BooleanNode(MomapyNode):
+class BooleanNode(MomapyKBNode):
     _cls_to_build = bool
     value = neomodel.BooleanProperty(required=True)
 
@@ -449,7 +449,7 @@ _cls_to_node_cls = {
 
 
 def _node_cls_name_from_cls_name(cls_name):
-    return f"{cls_name}Node"
+    return f"{cls_name}"
 
 
 def _node_cls_from_basetype(cls, _ongoing=None):
@@ -493,7 +493,7 @@ def _node_cls_from_dataclass(cls, _ongoing=None):
         ]
     )
     if not node_cls_bases:
-        node_cls_bases = tuple([MomapyNode])
+        node_cls_bases = tuple([MomapyKBNode])
     node_cls = type(node_cls_name, node_cls_bases, node_cls_ns)
     _cls_to_node_cls[cls] = node_cls
     setattr(sys.modules[__name__], node_cls.__name__, node_cls)
