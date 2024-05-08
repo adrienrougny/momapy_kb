@@ -114,7 +114,7 @@ def _get_transform_func_from_rules(rules, cls):
     return transform_func
 
 
-def _final_types_from_basetype(
+def _get_final_types_from_basetype(
     type_, required=True, many=False, ordered=False, in_collection=False
 ):
     return [
@@ -127,11 +127,11 @@ def _final_types_from_basetype(
     ]
 
 
-def _final_types_from_forwardref(
+def _get_final_types_from_forwardref(
     type_, required=True, many=False, ordered=False, in_collection=False
 ):
     type_ = momapy_kb.utils.evaluate_forward_ref(type_)
-    return _final_types_from_type(
+    return _get_final_types_from_type(
         type_,
         required=required,
         many=many,
@@ -140,7 +140,7 @@ def _final_types_from_forwardref(
     )
 
 
-def _final_types_from_collection(
+def _get_final_types_from_collection(
     type_, required=True, many=False, ordered=False, in_collection=False
 ):
     type_origin = typing.get_origin(type_)
@@ -151,7 +151,7 @@ def _final_types_from_collection(
         ordered = True
     else:
         ordered = False
-    return _final_types_from_type(
+    return _get_final_types_from_type(
         type_arg,
         required=required,
         many=many,
@@ -160,7 +160,7 @@ def _final_types_from_collection(
     )
 
 
-def _final_types_from_union(
+def _get_final_types_from_union(
     type_, required=True, many=False, ordered=False, in_collection=False
 ):
     type_args = typing.get_args(type_)
@@ -173,7 +173,7 @@ def _final_types_from_union(
             type_args_not_none.append(type_arg)
     return itertools.chain.from_iterable(
         [
-            _final_types_from_type(
+            _get_final_types_from_type(
                 type_arg,
                 required=required,
                 many=many,
@@ -185,12 +185,12 @@ def _final_types_from_union(
     )
 
 
-def _final_types_from_uniontype(
+def _get_final_types_from_uniontype(
     type_, required=True, many=False, ordered=False, in_collection=False
 ):
     type_args = typing.get_args(type_)
     type_ = typing.Union[tuple(type_args)]
-    return _final_types_from_type(
+    return _get_final_types_from_type(
         type_,
         required=required,
         many=many,
@@ -199,12 +199,12 @@ def _final_types_from_uniontype(
     )
 
 
-def _final_types_from_optional(
+def _get_final_types_from_optional(
     type_, required=True, many=False, ordered=False, in_collection=False
 ):
     type_args = typing.get_args(type_)
     type_arg = type_args[0]
-    return _final_types_from_type(
+    return _get_final_types_from_type(
         type_arg,
         required=False,
         many=many,
@@ -213,41 +213,41 @@ def _final_types_from_optional(
     )
 
 
-_final_types_from_type_rules = [
+_get_final_types_from_type_rules = [
     (
         (str, int, float, bool, momapy.drawing.NoneValueType, enum.Enum),
-        _final_types_from_basetype,
+        _get_final_types_from_basetype,
     ),
     (
         lambda type_: isinstance(type_, typing.ForwardRef),
-        _final_types_from_forwardref,
+        _get_final_types_from_forwardref,
     ),
-    (dataclasses.is_dataclass, _final_types_from_basetype),
+    (dataclasses.is_dataclass, _get_final_types_from_basetype),
     (
         lambda type_: typing.get_origin(type_)
         in [list, tuple, set, frozenset],
-        _final_types_from_collection,
+        _get_final_types_from_collection,
     ),
     (
         lambda type_: typing.get_origin(type_) is typing.Union,
-        _final_types_from_union,
+        _get_final_types_from_union,
     ),
     (
         lambda type_: typing.get_origin(type_) is types.UnionType,
-        _final_types_from_uniontype,
+        _get_final_types_from_uniontype,
     ),
     (
         lambda type_: typing.get_origin(type_) is typing.Optional,
-        _final_types_from_optional,
+        _get_final_types_from_optional,
     ),
 ]
 
 
-def _final_types_from_type(
+def _get_final_types_from_type(
     type_, required=True, many=False, ordered=False, in_collection=False
 ):
     transform_func = _get_transform_func_from_rules(
-        _final_types_from_type_rules, type_
+        _get_final_types_from_type_rules, type_
     )
     if transform_func is None:
         raise ValueError(f"unsupported type {type_}")
@@ -260,7 +260,7 @@ def _final_types_from_type(
     )
 
 
-def _node_cls_property_from_str(
+def _make_node_class_property_from_str(
     type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
 ):
     if many:
@@ -269,7 +269,7 @@ def _node_cls_property_from_str(
         return neomodel.StringProperty(required=required)
 
 
-def _node_cls_property_from_int(
+def _make_node_class_property_from_int(
     type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
 ):
     if many:
@@ -278,7 +278,7 @@ def _node_cls_property_from_int(
         return neomodel.IntegerProperty(required=required)
 
 
-def _node_cls_property_from_float(
+def _make_node_class_property_from_float(
     type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
 ):
     if many:
@@ -287,7 +287,7 @@ def _node_cls_property_from_float(
         return neomodel.FloatProperty(required=required)
 
 
-def _node_cls_property_from_bool(
+def _make_node_class_property_from_bool(
     type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
 ):
     if many:
@@ -296,34 +296,33 @@ def _node_cls_property_from_bool(
         return neomodel.BooleanProperty(required=required)
 
 
-def _node_cls_property_from_enum(
+def _make_node_class_property_from_enum(
     type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
 ):
-    return _node_cls_property_from_str(
+    return _make_node_class_property_from_str(
         type_, attr_name, required=required, many=many, ordered=ordered
     )
 
 
-def _node_cls_property_from_none_value_type(
+def _make_node_class_property_from_none_value_type(
     type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
 ):
-    return _node_cls_property_from_str(
+    return _make_node_class_property_from_str(
         type_, attr_name, required=required, many=many, ordered=ordered
     )
 
 
-def _node_cls_property_from_dataclass(
+def _make_node_class_property_from_dataclass(
     type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
 ):
     if _ongoing is None:
         _ongoing = set([])
-    if type_ in _cls_to_node_cls or type_ not in _ongoing:
-        node_cls = _node_cls_from_cls(type_, _ongoing=_ongoing)
-        _ongoing.add(type_.__name__)
+    if type_ not in _ongoing:
+        node_cls = make_node_class_from_class(type_, _ongoing=_ongoing)
     else:
+        # if we are already in the process of making the node class, we use a
+        # reference of it instead, to avoid infinite recursion
         node_cls = _node_cls_name_from_cls_name(type_.__name__)
-    # if we are already in the process of making the node class, we use a
-    # reference of it
     relationship_name = _make_relationship_name_from_attr_name(attr_name)
     if required:
         if many:
@@ -345,24 +344,27 @@ def _node_cls_property_from_dataclass(
     return node_cls_property
 
 
-_node_cls_property_from_final_type_rules = [
-    (str, _node_cls_property_from_str),
-    (int, _node_cls_property_from_int),
-    (float, _node_cls_property_from_float),
-    (bool, _node_cls_property_from_bool),
-    (enum.Enum, _node_cls_property_from_enum),
-    (momapy.drawing.NoneValueType, _node_cls_property_from_none_value_type),
-    (dataclasses.is_dataclass, _node_cls_property_from_dataclass),
+_make_node_class_property_from_final_type_rules = [
+    (str, _make_node_class_property_from_str),
+    (int, _make_node_class_property_from_int),
+    (float, _make_node_class_property_from_float),
+    (bool, _make_node_class_property_from_bool),
+    (enum.Enum, _make_node_class_property_from_enum),
+    (
+        momapy.drawing.NoneValueType,
+        _make_node_class_property_from_none_value_type,
+    ),
+    (dataclasses.is_dataclass, _make_node_class_property_from_dataclass),
 ]
 
 
-def _node_cls_property_from_final_type(
+def _make_node_class_property_from_final_type(
     type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
 ):
     if _ongoing is None:
         _ongoing = set([])
     transform_func = _get_transform_func_from_rules(
-        _node_cls_property_from_final_type_rules, type_
+        _make_node_class_property_from_final_type_rules, type_
     )
     if transform_func is None:
         raise ValueError(
@@ -379,20 +381,20 @@ def _node_cls_property_from_final_type(
     return node_cls_property
 
 
-def _node_cls_property_name_from_attr_name(attr_name):
+def _make_node_class_property_name_from_attr_name(attr_name):
     if attr_name == "id":
         return "uid"
     return attr_name
 
 
-def _node_cls_properties_from_type(attr_type, attr_name, _ongoing=None):
+def _make_node_class_properties_from_type(attr_type, attr_name, _ongoing=None):
     if _ongoing is None:
         _ongoing = set([])
     node_cls_properties = []
-    for final_type, required, many, ordered in _final_types_from_type(
+    for final_type, required, many, ordered in _get_final_types_from_type(
         attr_type
     ):
-        node_cls_property = _node_cls_property_from_final_type(
+        node_cls_property = _make_node_class_property_from_final_type(
             final_type,
             attr_name,
             required=required,
@@ -406,12 +408,12 @@ def _node_cls_properties_from_type(attr_type, attr_name, _ongoing=None):
     if len(node_cls_properties) > 1:
         for node_cls_property in node_cls_properties:
             node_cls_property.name = (
-                f"{_node_cls_property_name_from_attr_name(node_cls_property.attr_name)}_"
+                f"{_make_node_class_property_name_from_attr_name(node_cls_property.attr_name)}_"
                 f"{node_cls_property.final_type.__name__}"
             )
     else:
-        node_cls_properties[0].name = _node_cls_property_name_from_attr_name(
-            attr_name
+        node_cls_properties[0].name = (
+            _make_node_class_property_name_from_attr_name(attr_name)
         )
     return node_cls_properties
 
@@ -440,7 +442,7 @@ class BooleanNode(MomapyKBNode):
     value = neomodel.BooleanProperty(required=True)
 
 
-_cls_to_node_cls = {
+_class_to_node_class = {
     str: StringNode,
     int: IntegerNode,
     float: FloatNode,
@@ -452,22 +454,21 @@ def _node_cls_name_from_cls_name(cls_name):
     return f"{cls_name}"
 
 
-def _node_cls_from_basetype(cls, _ongoing=None):
-    return _cls_to_node_cls[cls]
+def _make_node_class_from_basetype(cls, _ongoing=None):
+    return _class_to_node_class[cls]
 
 
-def _node_cls_from_dataclass(cls, _ongoing=None):
+def _make_node_class_from_dataclass(cls, _ongoing=None):
     if _ongoing is None:
         _ongoing = set([])
-    # print(f"Transforming {cls} to node class")
-    node_cls = _cls_to_node_cls.get(cls)
+    node_cls = _class_to_node_class.get(cls)
     if node_cls is not None:
-        # print(f"{cls} already transformed to {node_cls}")
         return node_cls
+    _ongoing.add(cls)
     node_cls_name = _node_cls_name_from_cls_name(cls.__name__)
     node_cls_ns = {"_cls_to_build": cls}
     for field in dataclasses.fields(cls):
-        node_cls_properties = _node_cls_properties_from_type(
+        node_cls_properties = _make_node_class_properties_from_type(
             field.type, field.name, _ongoing=_ongoing
         )
         for node_cls_property in node_cls_properties:
@@ -475,7 +476,7 @@ def _node_cls_from_dataclass(cls, _ongoing=None):
             # we make sure potential more general parent properties are not made
             if (
                 node_cls_property.name
-                != _node_cls_property_name_from_attr_name(
+                != _make_node_class_property_name_from_attr_name(
                     node_cls_property.attr_name
                 )
             ):
@@ -483,7 +484,7 @@ def _node_cls_from_dataclass(cls, _ongoing=None):
     cls_bases = cls.__bases__
     node_cls_bases = tuple(
         [
-            _node_cls_from_cls(cls_base, _ongoing=_ongoing)
+            make_node_class_from_class(cls_base, _ongoing=_ongoing)
             for cls_base in cls_bases
             if cls_base
             not in (
@@ -495,30 +496,29 @@ def _node_cls_from_dataclass(cls, _ongoing=None):
     if not node_cls_bases:
         node_cls_bases = tuple([MomapyKBNode])
     node_cls = type(node_cls_name, node_cls_bases, node_cls_ns)
-    _cls_to_node_cls[cls] = node_cls
+    _class_to_node_class[cls] = node_cls
     setattr(sys.modules[__name__], node_cls.__name__, node_cls)
-    # print(f"{cls} transformed to {node_cls}")
+    _ongoing.remove(cls)
     return node_cls
 
 
-_node_cls_from_cls_rules = [
+make_node_class_from_class_rules = [
     (
         (str, int, float, bool),
-        _node_cls_from_basetype,
+        _make_node_class_from_basetype,
     ),
     (
         dataclasses.is_dataclass,
-        _node_cls_from_dataclass,
+        _make_node_class_from_dataclass,
     ),
 ]
 
 
-def _node_cls_from_cls(cls, _ongoing=None):
+def make_node_class_from_class(cls, _ongoing=None):
     if _ongoing is None:
         _ongoing = set([])
-    _ongoing.add(cls)
     transform_func = _get_transform_func_from_rules(
-        _node_cls_from_cls_rules, cls
+        make_node_class_from_class_rules, cls
     )
     if transform_func is None:
         raise ValueError(
@@ -528,7 +528,7 @@ def _node_cls_from_cls(cls, _ongoing=None):
     return node_cls
 
 
-def _node_attr_value_from_basetype_object(
+def _make_node_attr_value_from_basetype_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
     object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
@@ -537,14 +537,14 @@ def _node_attr_value_from_basetype_object(
     return obj
 
 
-def _node_attr_value_from_collection_object(
+def _make_node_attr_value_from_collection_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
     object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ):
     return [
-        _node_attr_value_from_object(
+        _make_node_attr_value_from_object(
             element,
             object_to_node=object_to_node,
             object_to_node_mode=object_to_node_mode,
@@ -554,7 +554,7 @@ def _node_attr_value_from_collection_object(
     ]
 
 
-def _node_attr_value_from_dataclass_object(
+def _make_node_attr_value_from_dataclass_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
     object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
@@ -569,7 +569,7 @@ def _node_attr_value_from_dataclass_object(
     return node
 
 
-def _node_attr_value_from_enum_object(
+def _make_node_attr_value_from_enum_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
     object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
@@ -578,7 +578,7 @@ def _node_attr_value_from_enum_object(
     return f"{type(obj).__name__}.{obj.name}"
 
 
-def _node_attr_value_from_none_value_object(
+def _make_node_attr_value_from_none_value_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
     object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
@@ -587,26 +587,32 @@ def _node_attr_value_from_none_value_object(
     return "none"
 
 
-_node_attr_value_from_object_rules = [
+_make_node_attr_value_from_object_rules = [
     (
         (str, int, float, bool, types.NoneType),
-        _node_attr_value_from_basetype_object,
+        _make_node_attr_value_from_basetype_object,
     ),
-    ((list, tuple, set, frozenset), _node_attr_value_from_collection_object),
-    (enum.Enum, _node_attr_value_from_enum_object),
-    (momapy.drawing.NoneValueType, _node_attr_value_from_none_value_object),
-    (dataclasses.is_dataclass, _node_attr_value_from_dataclass_object),
+    (
+        (list, tuple, set, frozenset),
+        _make_node_attr_value_from_collection_object,
+    ),
+    (enum.Enum, _make_node_attr_value_from_enum_object),
+    (
+        momapy.drawing.NoneValueType,
+        _make_node_attr_value_from_none_value_object,
+    ),
+    (dataclasses.is_dataclass, _make_node_attr_value_from_dataclass_object),
 ]
 
 
-def _node_attr_value_from_object(
+def _make_node_attr_value_from_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
     object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ):
     transform_func = _get_transform_func_from_rules(
-        _node_attr_value_from_object_rules, type(obj)
+        _make_node_attr_value_from_object_rules, type(obj)
     )
     if transform_func is None:
         raise ValueError(
@@ -638,7 +644,7 @@ def _save_node_from_basetype_object(
             node = object_to_node.get(obj)
         if node is not None:
             return node
-    node_cls = _node_cls_from_cls(type(obj))
+    node_cls = make_node_class_from_class(type(obj))
     node = node_cls(value=obj)
     node.save()
     if object_to_node_mode == "id":
@@ -665,7 +671,7 @@ def _save_node_from_enum_object(
             node = object_to_node.get(obj)
         if node is not None:
             return node
-    node_cls = _node_cls_from_cls(type(obj))
+    node_cls = make_node_class_from_class(type(obj))
     node = node_cls(
         name=obj.name,
         value=str(obj.value),
@@ -701,7 +707,7 @@ def _save_node_from_dataclass_object(
                 if node_attr_name == "annotations":
                     obj_attr_name = node_cls_property.attr_name
                     obj_attr_value = getattr(obj, obj_attr_name)
-                    node_attr_value = _node_attr_value_from_object(
+                    node_attr_value = _make_node_attr_value_from_object(
                         obj_attr_value,
                         object_to_node=object_to_node,
                         object_to_node_mode=object_to_node_mode,
@@ -728,14 +734,14 @@ def _save_node_from_dataclass_object(
                                     )
                     break
             return node
-    node_cls = _node_cls_from_cls(type(obj))
+    node_cls = make_node_class_from_class(type(obj))
     kwargs = {}
     to_connect = []
     for node_cls_property in _get_properties(node_cls):
         node_attr_name = node_cls_property.name
         obj_attr_name = node_cls_property.attr_name
         obj_attr_value = getattr(obj, obj_attr_name)
-        node_attr_value = _node_attr_value_from_object(
+        node_attr_value = _make_node_attr_value_from_object(
             obj_attr_value,
             object_to_node=object_to_node,
             object_to_node_mode=object_to_node_mode,
@@ -799,7 +805,6 @@ def save_node_from_object(
     object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ):
-    # print(f"Saving object of type {type(obj)} to node")
     transform_func = _get_transform_func_from_rules(
         _save_node_from_object_rules, type(obj)
     )
@@ -816,7 +821,7 @@ def save_node_from_object(
     return node
 
 
-def make_doc(
+def make_doc_from_module(
     module,
     mode="neo4j",
     recursive=True,
@@ -893,7 +898,7 @@ def make_doc(
         if isinstance(attr_value, type) and not any(
             [issubclass(attr_value, excluded_cls) for excluded_cls in exclude]
         ):
-            node_cls = _node_cls_from_cls(attr_value)
+            node_cls = make_node_class_from_class(attr_value)
             if (
                 node_cls is not None
                 and node_cls.__name__ not in node_label_to_node_spec
