@@ -531,7 +531,7 @@ def _node_cls_from_cls(cls, _ongoing=None):
 def _node_attr_value_from_basetype_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["id", "hash"] = "id",
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ):
     return obj
@@ -540,7 +540,7 @@ def _node_attr_value_from_basetype_object(
 def _node_attr_value_from_collection_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["id", "hash"] = "id",
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ):
     return [
@@ -557,7 +557,7 @@ def _node_attr_value_from_collection_object(
 def _node_attr_value_from_dataclass_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["id", "hash"] = "id",
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ):
     node = save_node_from_object(
@@ -572,7 +572,7 @@ def _node_attr_value_from_dataclass_object(
 def _node_attr_value_from_enum_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["id", "hash"] = "id",
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ) -> str:
     return f"{type(obj).__name__}.{obj.name}"
@@ -581,7 +581,7 @@ def _node_attr_value_from_enum_object(
 def _node_attr_value_from_none_value_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["id", "hash"] = "id",
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ) -> str:
     return "none"
@@ -602,7 +602,7 @@ _node_attr_value_from_object_rules = [
 def _node_attr_value_from_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["id", "hash"] = "id",
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ):
     transform_func = _get_transform_func_from_rules(
@@ -624,36 +624,110 @@ def _node_attr_value_from_object(
 def _save_node_from_basetype_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["id", "hash"] = "id",
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ):
+    if object_to_node is None:
+        object_to_node = {}
+    if object_to_node_exclude is None:
+        object_to_node_exclude = tuple([])
+    if not isinstance(obj, object_to_node_exclude):
+        if object_to_node_mode == "id":
+            node = object_to_node.get(id(obj))
+        elif object_to_node_mode == "hash":
+            node = object_to_node.get(obj)
+        if node is not None:
+            return node
     node_cls = _node_cls_from_cls(type(obj))
     node = node_cls(value=obj)
     node.save()
+    if object_to_node_mode == "id":
+        object_to_node[id(obj)] = node
+    elif object_to_node_mode == "hash":
+        object_to_node[obj] = node
     return node
 
 
 def _save_node_from_enum_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["id", "hash"] = "id",
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ):
+    if object_to_node is None:
+        object_to_node = {}
+    if object_to_node_exclude is None:
+        object_to_node_exclude = tuple([])
+    if not isinstance(obj, object_to_node_exclude):
+        if object_to_node_mode == "id":
+            node = object_to_node.get(id(obj))
+        elif object_to_node_mode == "hash":
+            node = object_to_node.get(obj)
+        if node is not None:
+            return node
     node_cls = _node_cls_from_cls(type(obj))
     node = node_cls(
         name=obj.name,
         value=str(obj.value),
     )
     node.save()
+    if object_to_node_mode == "id":
+        object_to_node[id(obj)] = node
+    elif object_to_node_mode == "hash":
+        object_to_node[obj] = node
     return node
 
 
 def _save_node_from_dataclass_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["id", "hash"] = "id",
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ) -> neomodel.StructuredNode:
+    if object_to_node is None:
+        object_to_node = {}
+    if object_to_node_exclude is None:
+        object_to_node_exclude = tuple([])
+    if not isinstance(obj, object_to_node_exclude):
+        if object_to_node_mode == "id":
+            node = object_to_node.get(id(obj))
+        elif object_to_node_mode == "hash":
+            node = object_to_node.get(obj)
+        if node is not None:
+            # below should be deleted after annotations are fixed
+            node_cls = type(node)
+            for node_cls_property in _get_properties(node_cls):
+                node_attr_name = node_cls_property.name
+                if node_attr_name == "annotations":
+                    obj_attr_name = node_cls_property.attr_name
+                    obj_attr_value = getattr(obj, obj_attr_name)
+                    node_attr_value = _node_attr_value_from_object(
+                        obj_attr_value,
+                        object_to_node=object_to_node,
+                        object_to_node_mode=object_to_node_mode,
+                        object_to_node_exclude=object_to_node_exclude,
+                    )
+                    if (
+                        node_attr_value is not None
+                    ):  # as a consequence, cannot distinguish [] from None if type is list | None
+                        for i, node_attr_element_value in enumerate(
+                            node_attr_value
+                        ):
+                            if issubclass(
+                                type(node_attr_element_value)._cls_to_build,
+                                node_cls_property.final_type,
+                            ):
+                                relationship_manager = getattr(
+                                    node, node_attr_name
+                                )
+                                if not relationship_manager.is_connected(
+                                    node_attr_element_value
+                                ):
+                                    relationship_manager.connect(
+                                        node_attr_element_value
+                                    )
+                    break
+            return node
     node_cls = _node_cls_from_cls(type(obj))
     kwargs = {}
     to_connect = []
@@ -703,9 +777,12 @@ def _save_node_from_dataclass_object(
         node_attr_value,
         relationship_properties,
     ) in to_connect:
-        getattr(node, node_attr_name).connect(
-            node_attr_value, relationship_properties
-        )
+        relationship_manager = getattr(node, node_attr_name)
+        relationship_manager.connect(node_attr_value, relationship_properties)
+    if object_to_node_mode == "id":
+        object_to_node[id(obj)] = node
+    elif object_to_node_mode == "hash":
+        object_to_node[obj] = node
     return node
 
 
@@ -719,20 +796,9 @@ _save_node_from_object_rules = [
 def save_node_from_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["id", "hash"] = "id",
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
     object_to_node_exclude: tuple[type] | None = None,
 ):
-    if object_to_node is None:
-        object_to_node = {}
-    if object_to_node_exclude is None:
-        object_to_node_exclude = tuple([])
-    if not isinstance(obj, object_to_node_exclude):
-        if object_to_node_mode == "id":
-            node = object_to_node.get(id(obj))
-        elif object_to_node_mode == "hash":
-            node = object_to_node.get(obj)
-        if node is not None:
-            return node
     # print(f"Saving object of type {type(obj)} to node")
     transform_func = _get_transform_func_from_rules(
         _save_node_from_object_rules, type(obj)
@@ -747,11 +813,6 @@ def save_node_from_object(
         object_to_node_mode=object_to_node_mode,
         object_to_node_exclude=object_to_node_exclude,
     )
-    if not isinstance(obj, object_to_node_exclude):
-        if object_to_node_mode == "id":
-            object_to_node[id(obj)] = node
-        elif object_to_node_mode == "hash":
-            object_to_node[obj] = node
     return node
 
 
