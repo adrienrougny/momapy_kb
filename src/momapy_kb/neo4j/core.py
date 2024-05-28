@@ -384,31 +384,31 @@ class MomapyKBNode(neomodel.StructuredNode):
     pass
 
 
-class StringNode(MomapyKBNode):
+class String(MomapyKBNode):
     _cls_to_build = str
     value = neomodel.StringProperty(required=True)
 
 
-class IntegerNode(MomapyKBNode):
+class Integer(MomapyKBNode):
     _cls_to_build = int
     value = neomodel.IntegerProperty(required=True)
 
 
-class FloatNode(MomapyKBNode):
+class Float(MomapyKBNode):
     _cls_to_build = float
     value = neomodel.FloatProperty(required=True)
 
 
-class BooleanNode(MomapyKBNode):
+class Boolean(MomapyKBNode):
     _cls_to_build = bool
     value = neomodel.BooleanProperty(required=True)
 
 
 _class_to_node_class = {
-    str: StringNode,
-    int: IntegerNode,
-    float: FloatNode,
-    bool: BooleanNode,
+    str: String,
+    int: Integer,
+    float: Float,
+    bool: Boolean,
 }
 
 
