@@ -13,7 +13,7 @@
 
         <ul>
         {% for property_ in node_spec['properties'] %}
-            <li>{{ property_["name"] }}: {{ property_["args"]["type"] }}</li>
+            <li>{{ property_["property_name"] }}: {{ property_["type"].__name__.removesuffix("Property").upper() }}</li>
         {% endfor %}
         </ul>
 
@@ -21,7 +21,7 @@
 
         <ul>
         {% for relationship in node_spec['relationships'] %}
-            <li>{{ relationship["args"]["name"] }} [{{ relationship["args"]["cardinality"] }}] <a href="#{{ relationship['args']['node_cls'].__name__ }}">{{ relationship["args"]["node_cls"].__name__ }}</a></li>
+            <li>{{ relationship["relationship_type"] }} [{{ relationship["cardinality"].__name__ }}] <a href="#{{ relationship['node_class'].__name__ }}">{{ relationship["node_class"].__name__ }}</a></li>
         {% endfor %}
         </ul>
 {% endfor %}

@@ -1,0 +1,14 @@
+{% for node_spec in node_specs %}
+    <h1 id={{ node_spec['label'] }}>{{ node_spec['label'] }}</h1>
+
+    <h2>Attributes</h2>
+
+        <ul>
+        {% for property_ in node_spec['properties'] %}
+            <li>{{ property_["property_name"] }}: {{ property_["type"].__name__ }}(required={{ property_["required"] }})</li>
+        {% endfor %}
+        {% for relationship in node_spec['relationships'] %}
+            <li>{{ relationship["property_name"] }}: RelationshipTo(<a href="#{{ relationship['node_class'].__name__ }}">{{ relationship["node_class"].__name__ }}</a>, '{{ relationship["relationship_type"] }}', {{ relationship["cardinality"].__name__ }})</li>
+        {% endfor %}
+        </ul>
+{% endfor %}

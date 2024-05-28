@@ -3,18 +3,17 @@ import typing
 import types
 import re
 import enum
-import pathlib
 import itertools
 import abc
 import sys
 
 import neomodel
 import inflect
-import jinja2
 
 import momapy.drawing
 
 import momapy_kb.utils
+import momapy_kb.neo4j.utils
 
 
 def connect(hostname, username, password, protocol="bolt", port="7687"):
@@ -30,43 +29,6 @@ def delete_all():
 def query(query_str):
     results, meta = neomodel.db.cypher_query(query_str)
     return results, meta
-
-
-def _get_properties(node_cls):
-    properties = []
-    for property_name in node_cls.defined_properties():
-        property_ = getattr(node_cls, property_name)
-        if property_ is not None:
-            properties.append(property_)
-    return properties
-
-
-def _is_required(property_):
-    if isinstance(property_, neomodel.Property):
-        return property_.required
-    elif isinstance(property_, neomodel.RelationshipTo):
-        if (
-            property_.manager == neomodel.One
-            or property_.manager == neomodel.OneOrMore
-        ):
-            return True
-    return False
-
-
-def _is_many(property_):
-    if isinstance(property_, neomodel.ArrayProperty):
-        return True
-    elif isinstance(property_, neomodel.RelationshipTo):
-        if (
-            property_.manager == neomodel.ZeroOrMore
-            or property_.manager == neomodel.OneOrMore
-        ):
-            return True
-    return False
-
-
-def _is_ordered(property_):
-    return hasattr(property_, "order")
 
 
 def _make_relationship_name_from_attr_name(attr_name):
@@ -702,7 +664,9 @@ def _save_node_from_dataclass_object(
         if node is not None:
             # below should be deleted after annotations are fixed
             node_cls = type(node)
-            for node_cls_property in _get_properties(node_cls):
+            for node_cls_property in momapy_kb.neo4j.utils.get_properties(
+                node_cls
+            ):
                 node_attr_name = node_cls_property.name
                 if node_attr_name == "annotations":
                     obj_attr_name = node_cls_property.attr_name
@@ -737,7 +701,7 @@ def _save_node_from_dataclass_object(
     node_cls = make_node_class_from_class(type(obj))
     kwargs = {}
     to_connect = []
-    for node_cls_property in _get_properties(node_cls):
+    for node_cls_property in momapy_kb.neo4j.utils.get_properties(node_cls):
         node_attr_name = node_cls_property.name
         obj_attr_name = node_cls_property.attr_name
         obj_attr_value = getattr(obj, obj_attr_name)
@@ -751,7 +715,7 @@ def _save_node_from_dataclass_object(
             node_attr_value is not None
         ):  # as a consequence, cannot distinguish [] from None if type is list | None
             if isinstance(node_cls_property, neomodel.RelationshipTo):
-                if _is_many(node_cls_property):
+                if momapy_kb.neo4j.utils.is_many(node_cls_property):
                     for i, node_attr_element_value in enumerate(
                         node_attr_value
                     ):
@@ -819,98 +783,3 @@ def save_node_from_object(
         object_to_node_exclude=object_to_node_exclude,
     )
     return node
-
-
-def make_doc_from_module(
-    module,
-    mode="neo4j",
-    recursive=True,
-    output_file_path=None,
-    exclude: list[type] | None = None,
-):
-
-    def _prepare_node_spec(
-        node_cls,
-        node_label_to_node_spec=None,
-        recursive=True,
-        exclude=None,
-    ):
-        if node_label_to_node_spec is None:
-            node_label_to_node_spec = {}
-        if exclude is None:
-            exclude = []
-        inherited_labels = node_cls.inherited_labels()
-        label = inherited_labels[0]
-        del inherited_labels[0]
-        properties = []
-        relationships = []
-        properties_or_relationships = (
-            momapy_kb.utils.get_properties_from_node_cls(node_cls)
-        )
-        for property_or_relationship in properties_or_relationships:
-            if property_or_relationship["type"] == "property":
-                properties.append(property_or_relationship)
-            else:
-                relationships.append(property_or_relationship)
-        node_spec = {
-            "label": label,
-            "inherited_labels": inherited_labels,
-            "properties": properties,
-            "relationships": relationships,
-        }
-        node_label_to_node_spec[label] = node_spec
-        if recursive:
-            for relationship in node_spec["relationships"]:
-                node_cls = relationship["args"]["node_cls"]
-                if (
-                    node_cls.__name__ not in node_label_to_node_spec
-                    and not any(
-                        [
-                            issubclass(node_cls._cls_to_build, excluded_cls)
-                            for excluded_cls in exclude
-                        ]
-                    )
-                ):
-                    node_label_to_node_spec = _prepare_node_spec(
-                        relationship["args"]["node_cls"],
-                        node_label_to_node_spec=node_label_to_node_spec,
-                        recursive=recursive,
-                        exclude=exclude,
-                    )
-        return node_label_to_node_spec
-
-    if exclude is None:
-        exclude = []
-    current_module_dir = pathlib.Path(__file__).parent
-    template_path = current_module_dir / "templates"
-    loader = jinja2.FileSystemLoader(template_path)
-    environment = jinja2.Environment(loader=loader)
-    environment.loader.list_templates()
-    if mode == "neo4j":
-        template = environment.get_template("doc_neo4j_model.html")
-    elif mode == "neomodel":
-        template = environment.get_template("doc_neomodel.html")
-    else:
-        raise ValueError(f"unrecognized mode {mode}")
-    node_label_to_node_spec = {}
-    for attr_name in dir(module):
-        attr_value = getattr(module, attr_name)
-        if isinstance(attr_value, type) and not any(
-            [issubclass(attr_value, excluded_cls) for excluded_cls in exclude]
-        ):
-            node_cls = make_node_class_from_class(attr_value)
-            if (
-                node_cls is not None
-                and node_cls.__name__ not in node_label_to_node_spec
-            ):
-                node_label_to_node_spec |= _prepare_node_spec(
-                    node_cls, exclude=exclude
-                )
-    node_specs = list(node_label_to_node_spec.values())
-    node_specs.sort(key=lambda node_spec: node_spec["label"])
-    s = template.render(node_specs=node_specs)
-    if output_file_path:
-        with open(output_file_path, "w") as f:
-            f.write(s)
-    else:
-        print(s)
