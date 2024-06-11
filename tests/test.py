@@ -1,21 +1,12 @@
 import os
-import dataclasses
-import typing
 
 import momapy.core
-import momapy.sbgn.pd
-import momapy.sbgn.io.sbgnml
+import momapy.builder
+import momapy.celldesigner.io.celldesigner
 import momapy.io
 
-import momapy_kb.neo4j
-import momapy_kb.utils
+import momapy_kb.neo4j.core
 import credentials
-
-
-@dataclasses.dataclass
-class Collection:
-    name: str
-    models: list[momapy.core.Model] = dataclasses.field(default_factory=list)
 
 
 def list_dir(path):
@@ -26,17 +17,32 @@ def list_dir(path):
     return files
 
 
+def read_and_save_map(file_name, file_path):
+    print(file_path)
+    try:
+        m = momapy.io.read(file_path)
+        m = momapy.builder.builder_from_object(m)
+        m.id = file_name
+        m = momapy.builder.object_from_builder(m)
+    except Exception as e:
+        print(f"error in reading: {file_path}")
+    else:
+        try:
+            momapy_kb.neo4j.core.save_node_from_object(m)
+        except Exception as e:
+            print(f"error in storing {file_path}")
+
+
 if __name__ == "__main__":
-    momapy_kb.neo4j.connect(
+    momapy_kb.neo4j.core.connect(
         credentials.HOST_NAME, credentials.USER_NAME, credentials.PASSWORD
     )
-    momapy_kb.neo4j.delete_all()
-    c = Collection("PD")
+    momapy_kb.neo4j.core.delete_all()
     for file_name, file_path in list_dir(
-        "/home/rougny/research/commute/commute_dm_develop/build/maps/pd/sbgn/"
+        "/home/rougny/research/commute/commute_dm_develop/build/maps/covid/celldesigner/"
     ):
-        if "MTOR" in file_name:
-            print(file_path)
-            m = momapy.io.read(file_path)
-            c.models.append(m.model)
-    momapy_kb.neo4j.save_node_from_object(c)
+        read_and_save_map(file_name, file_path)
+    for file_name, file_path in list_dir(
+        "/home/rougny/research/commute/commute_dm_develop/build/maps/pd/celldesigner/"
+    ):
+        read_and_save_map(file_name, file_path)

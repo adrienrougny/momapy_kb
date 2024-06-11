@@ -14,4 +14,4 @@ if __name__ == "__main__":
     m = momapy.io.read(
         "/home/rougny/research/commute/commute_dm_develop/build/maps/pd/celldesigner/Neuroinflammation.xml"
     )
-    momapy_kb.neo4j.core.save_node_from_object(m.model)
+    momapy_kb.neo4j.core.save_node_from_object(m, object_to_node_mode="hash")
