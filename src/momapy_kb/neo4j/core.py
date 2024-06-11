@@ -6,7 +6,9 @@ import enum
 import itertools
 import abc
 import sys
+import collections.abc
 
+import frozendict
 import neomodel
 import inflect
 
@@ -17,7 +19,6 @@ import momapy_kb.neo4j.utils
 
 
 def connect(hostname, username, password, protocol="bolt", port="7687"):
-
     connection_str = f"{protocol}://{username}:{password}@{hostname}:{port}"
     neomodel.config.DATABASE_URL = connection_str
 
@@ -73,6 +74,7 @@ def _get_transform_func_from_rules(rules, cls):
             evaluation = condition(cls)
         if evaluation:
             transform_func = rule[1]
+            break
     return transform_func
 
 
@@ -175,11 +177,20 @@ def _get_final_types_from_optional(
     )
 
 
+def _get_final_types_from_dict(
+    type_, required=True, many=False, ordered=False, in_collection=False
+):
+    return [
+        (
+            typing.get_origin(type_),
+            required,
+            many,
+            ordered,
+        )
+    ]
+
+
 _get_final_types_from_type_rules = [
-    (
-        (str, int, float, bool, momapy.drawing.NoneValueType, enum.Enum),
-        _get_final_types_from_basetype,
-    ),
     (
         lambda type_: isinstance(type_, typing.ForwardRef),
         _get_final_types_from_forwardref,
@@ -201,6 +212,32 @@ _get_final_types_from_type_rules = [
     (
         lambda type_: typing.get_origin(type_) is typing.Optional,
         _get_final_types_from_optional,
+    ),
+    (
+        lambda type_: typing.get_origin(type_)
+        in (
+            dict,
+            frozendict.frozendict,
+        ),
+        _get_final_types_from_dict,
+    ),
+    (
+        (
+            str,
+            int,
+            float,
+            bool,
+            list,
+            tuple,
+            set,
+            frozenset,
+            dict,
+            frozendict.frozendict,
+            enum.Enum,
+            momapy.drawing.NoneValueType,
+            momapy.core.LayoutModelMapping,
+        ),
+        _get_final_types_from_basetype,
     ),
 ]
 
@@ -306,6 +343,33 @@ def _make_node_class_property_from_dataclass(
     return node_cls_property
 
 
+def _make_node_class_property_from_dict(
+    type_, attr_name, required=True, many=False, ordered=False, _ongoing=None
+):
+    if _ongoing is None:
+        _ongoing = set([])
+    node_cls = make_node_class_from_class(type_, _ongoing=_ongoing)
+    relationship_name = _make_relationship_name_from_attr_name(attr_name)
+    if required:
+        if many:
+            cardinality = neomodel.OneOrMore
+        else:
+            cardinality = neomodel.One
+    else:
+        if many:
+            cardinality = neomodel.ZeroOrMore
+        else:
+            cardinality = neomodel.ZeroOrOne
+    if ordered:
+        model = _OrderedRelationshipTo
+    else:
+        model = neomodel.StructuredRel
+    node_cls_property = neomodel.RelationshipTo(
+        node_cls, relationship_name, cardinality=cardinality, model=model
+    )
+    return node_cls_property
+
+
 _make_node_class_property_from_final_type_rules = [
     (str, _make_node_class_property_from_str),
     (int, _make_node_class_property_from_int),
@@ -317,6 +381,13 @@ _make_node_class_property_from_final_type_rules = [
         _make_node_class_property_from_none_value_type,
     ),
     (dataclasses.is_dataclass, _make_node_class_property_from_dataclass),
+    (
+        (
+            dict,
+            frozendict.frozendict,
+        ),
+        _make_node_class_property_from_dict,
+    ),
 ]
 
 
@@ -404,11 +475,45 @@ class Boolean(MomapyKBNode):
     value = neomodel.BooleanProperty(required=True)
 
 
+class Item(MomapyKBNode):
+    _cls_to_build = None
+    key = neomodel.RelationshipTo(MomapyKBNode, "HAS_KEY", neomodel.One)
+    value = neomodel.RelationshipTo(MomapyKBNode, "HAS_VALUE", neomodel.One)
+
+
+class Mapping(MomapyKBNode):
+    _cls_to_build = dict
+    items = neomodel.RelationshipTo(Item, "HAS_ITEM", neomodel.ZeroOrMore)
+
+
+class Bag(MomapyKBNode):
+    _cls_to_build = set
+    elements = neomodel.RelationshipTo(
+        MomapyKBNode, "HAS_ELEMENT", neomodel.ZeroOrMore
+    )
+
+
+class Sequence(MomapyKBNode):
+    _cls_to_build = list
+    elements = neomodel.RelationshipTo(
+        MomapyKBNode,
+        "HAS_ELEMENT",
+        neomodel.ZeroOrMore,
+        model=_OrderedRelationshipTo,
+    )
+
+
 _class_to_node_class = {
     str: String,
     int: Integer,
     float: Float,
     bool: Boolean,
+    dict: Mapping,
+    frozendict.frozendict: Mapping,
+    set: Bag,
+    frozenset: Bag,
+    list: Sequence,
+    tuple: Sequence,
 }
 
 
@@ -430,29 +535,26 @@ def _make_node_class_from_dataclass(cls, _ongoing=None):
     node_cls_name = _node_cls_name_from_cls_name(cls.__name__)
     node_cls_ns = {"_cls_to_build": cls}
     for field in dataclasses.fields(cls):
-        node_cls_properties = _make_node_class_properties_from_type(
-            field.type, field.name, _ongoing=_ongoing
-        )
-        for node_cls_property in node_cls_properties:
-            node_cls_ns[node_cls_property.name] = node_cls_property
-            # we make sure potential more general parent properties are not made
-            if (
-                node_cls_property.name
-                != _make_node_class_property_name_from_attr_name(
-                    node_cls_property.attr_name
-                )
-            ):
-                node_cls_ns[node_cls_property.attr_name] = None
+        if not field.name.startswith("_"):  # we do not want private attributes
+            node_cls_properties = _make_node_class_properties_from_type(
+                field.type, field.name, _ongoing=_ongoing
+            )
+            for node_cls_property in node_cls_properties:
+                node_cls_ns[node_cls_property.name] = node_cls_property
+                # we make sure potential more general parent properties are not made
+                if (
+                    node_cls_property.name
+                    != _make_node_class_property_name_from_attr_name(
+                        node_cls_property.attr_name
+                    )
+                ):
+                    node_cls_ns[node_cls_property.attr_name] = None
     cls_bases = cls.__bases__
     node_cls_bases = tuple(
         [
             make_node_class_from_class(cls_base, _ongoing=_ongoing)
             for cls_base in cls_bases
-            if cls_base
-            not in (
-                object,
-                abc.ABC,
-            )
+            if cls_base not in (object, abc.ABC, collections.abc.Mapping)
         ]
     )
     if not node_cls_bases:
@@ -466,7 +568,18 @@ def _make_node_class_from_dataclass(cls, _ongoing=None):
 
 make_node_class_from_class_rules = [
     (
-        (str, int, float, bool),
+        (
+            str,
+            int,
+            float,
+            bool,
+            list,
+            tuple,
+            set,
+            frozenset,
+            dict,
+            frozendict.frozendict,
+        ),
         _make_node_class_from_basetype,
     ),
     (
@@ -549,6 +662,21 @@ def _make_node_attr_value_from_none_value_object(
     return "none"
 
 
+def _make_node_attr_value_from_dict_object(
+    obj,
+    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
+    object_to_node_exclude: tuple[type] | None = None,
+):
+    node = save_node_from_object(
+        obj,
+        object_to_node=object_to_node,
+        object_to_node_mode=object_to_node_mode,
+        object_to_node_exclude=object_to_node_exclude,
+    )
+    return node
+
+
 _make_node_attr_value_from_object_rules = [
     (
         (str, int, float, bool, types.NoneType),
@@ -564,6 +692,10 @@ _make_node_attr_value_from_object_rules = [
         _make_node_attr_value_from_none_value_object,
     ),
     (dataclasses.is_dataclass, _make_node_attr_value_from_dataclass_object),
+    (
+        (dict, frozendict.frozendict),
+        _make_node_attr_value_from_dict_object,
+    ),
 ]
 
 
@@ -604,6 +736,8 @@ def _save_node_from_basetype_object(
             node = object_to_node.get(id(obj))
         elif object_to_node_mode == "hash":
             node = object_to_node.get(obj)
+        else:
+            node = None
         if node is not None:
             return node
     node_cls = make_node_class_from_class(type(obj))
@@ -631,6 +765,8 @@ def _save_node_from_enum_object(
             node = object_to_node.get(id(obj))
         elif object_to_node_mode == "hash":
             node = object_to_node.get(obj)
+        else:
+            node = None
         if node is not None:
             return node
     node_cls = make_node_class_from_class(type(obj))
@@ -663,40 +799,40 @@ def _save_node_from_dataclass_object(
             node = object_to_node.get(obj)
         if node is not None:
             # below should be deleted after annotations are fixed
-            node_cls = type(node)
-            for node_cls_property in momapy_kb.neo4j.utils.get_properties(
-                node_cls
-            ):
-                node_attr_name = node_cls_property.name
-                if node_attr_name == "annotations":
-                    obj_attr_name = node_cls_property.attr_name
-                    obj_attr_value = getattr(obj, obj_attr_name)
-                    node_attr_value = _make_node_attr_value_from_object(
-                        obj_attr_value,
-                        object_to_node=object_to_node,
-                        object_to_node_mode=object_to_node_mode,
-                        object_to_node_exclude=object_to_node_exclude,
-                    )
-                    if (
-                        node_attr_value is not None
-                    ):  # as a consequence, cannot distinguish [] from None if type is list | None
-                        for i, node_attr_element_value in enumerate(
-                            node_attr_value
-                        ):
-                            if issubclass(
-                                type(node_attr_element_value)._cls_to_build,
-                                node_cls_property.final_type,
-                            ):
-                                relationship_manager = getattr(
-                                    node, node_attr_name
-                                )
-                                if not relationship_manager.is_connected(
-                                    node_attr_element_value
-                                ):
-                                    relationship_manager.connect(
-                                        node_attr_element_value
-                                    )
-                    break
+            # node_cls = type(node)
+            # for node_cls_property in momapy_kb.neo4j.utils.get_properties(
+            #     node_cls
+            # ):
+            #     node_attr_name = node_cls_property.name
+            #     if node_attr_name == "annotations":
+            #         obj_attr_name = node_cls_property.attr_name
+            #         obj_attr_value = getattr(obj, obj_attr_name)
+            #         node_attr_value = _make_node_attr_value_from_object(
+            #             obj_attr_value,
+            #             object_to_node=object_to_node,
+            #             object_to_node_mode=object_to_node_mode,
+            #             object_to_node_exclude=object_to_node_exclude,
+            #         )
+            #         if (
+            #             node_attr_value is not None
+            #         ):  # as a consequence, cannot distinguish [] from None if type is list | None
+            #             for i, node_attr_element_value in enumerate(
+            #                 node_attr_value
+            #             ):
+            #                 if issubclass(
+            #                     type(node_attr_element_value)._cls_to_build,
+            #                     node_cls_property.final_type,
+            #                 ):
+            #                     relationship_manager = getattr(
+            #                         node, node_attr_name
+            #                     )
+            #                     if not relationship_manager.is_connected(
+            #                         node_attr_element_value
+            #                     ):
+            #                         relationship_manager.connect(
+            #                             node_attr_element_value
+            #                         )
+            #         break
             return node
     node_cls = make_node_class_from_class(type(obj))
     kwargs = {}
@@ -756,10 +892,257 @@ def _save_node_from_dataclass_object(
     return node
 
 
+def _save_node_from_list_object(
+    obj,
+    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
+    object_to_node_exclude: tuple[type] | None = None,
+):
+    if object_to_node is None:
+        object_to_node = {}
+    if object_to_node_exclude is None:
+        object_to_node_exclude = tuple([])
+    if not isinstance(obj, object_to_node_exclude):
+        if object_to_node_mode == "id":
+            node = object_to_node.get(id(obj))
+        else:
+            node = None
+        if node is not None:
+            return node
+    node_cls = make_node_class_from_class(type(obj))
+    node = node_cls()
+    node.save()
+    for i, element in enumerate(obj):
+        node_element = save_node_from_object(
+            obj=element,
+            object_to_node=object_to_node,
+            object_to_node_mode=object_to_node_mode,
+            object_to_node_exclude=object_to_node_exclude,
+        )
+        node.elements.connect(node_element, {"order": i})
+    if object_to_node_mode == "id":
+        object_to_node[id(obj)] = node
+    return node
+
+
+def _save_node_from_tuple_object(
+    obj,
+    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
+    object_to_node_exclude: tuple[type] | None = None,
+):
+    if object_to_node is None:
+        object_to_node = {}
+    if object_to_node_exclude is None:
+        object_to_node_exclude = tuple([])
+    if not isinstance(obj, object_to_node_exclude):
+        if object_to_node_mode == "id":
+            node = object_to_node.get(id(obj))
+        elif object_to_node_mode == "hash":
+            try:
+                hash(obj)
+            except TypeError:
+                pass
+            else:
+                hashable = True
+                node = object_to_node.get(obj)
+        else:
+            node = None
+        if node is not None:
+            return node
+    node_cls = make_node_class_from_class(type(obj))
+    node = node_cls()
+    node.save()
+    for i, element in enumerate(obj):
+        node_element = save_node_from_object(
+            obj=element,
+            object_to_node=object_to_node,
+            object_to_node_mode=object_to_node_mode,
+            object_to_node_exclude=object_to_node_exclude,
+        )
+        node.elements.connect(node_element, {"order": i})
+    if object_to_node_mode == "id":
+        object_to_node[id(obj)] = node
+    elif object_to_node_mode == "hash":
+        if hashable:
+            object_to_node[obj] = node
+    return node
+
+
+def _save_node_from_set_object(
+    obj,
+    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
+    object_to_node_exclude: tuple[type] | None = None,
+):
+    if object_to_node is None:
+        object_to_node = {}
+    if object_to_node_exclude is None:
+        object_to_node_exclude = tuple([])
+    if not isinstance(obj, object_to_node_exclude):
+        if object_to_node_mode == "id":
+            node = object_to_node.get(id(obj))
+        else:
+            node = None
+        if node is not None:
+            return node
+    node_cls = make_node_class_from_class(type(obj))
+    node = node_cls()
+    node.save()
+    for element in obj:
+        node_element = save_node_from_object(
+            obj=element,
+            object_to_node=object_to_node,
+            object_to_node_mode=object_to_node_mode,
+            object_to_node_exclude=object_to_node_exclude,
+        )
+        node.elements.connect(node_element)
+    if object_to_node_mode == "id":
+        object_to_node[id(obj)] = node
+    return node
+
+
+def _save_node_from_frozenset_object(
+    obj,
+    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
+    object_to_node_exclude: tuple[type] | None = None,
+):
+    if object_to_node is None:
+        object_to_node = {}
+    if object_to_node_exclude is None:
+        object_to_node_exclude = tuple([])
+    if not isinstance(obj, object_to_node_exclude):
+        if object_to_node_mode == "id":
+            node = object_to_node.get(id(obj))
+        elif object_to_node_mode == "hash":
+            try:
+                hash(obj)
+            except TypeError:
+                pass
+            else:
+                hashable = True
+                node = object_to_node.get(obj)
+        else:
+            node = None
+        if node is not None:
+            return node
+    node_cls = make_node_class_from_class(type(obj))
+    node = node_cls()
+    node.save()
+    for element in obj:
+        node_element = save_node_from_object(
+            obj=element,
+            object_to_node=object_to_node,
+            object_to_node_mode=object_to_node_mode,
+            object_to_node_exclude=object_to_node_exclude,
+        )
+        node.elements.connect(node_element)
+    if object_to_node_mode == "id":
+        object_to_node[id(obj)] = node
+    elif object_to_node_mode == "hash":
+        if hashable:
+            object_to_node[obj] = node
+    return node
+
+
+def _save_node_from_dict_object(
+    obj,
+    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
+    object_to_node_exclude: tuple[type] | None = None,
+):
+    if object_to_node is None:
+        object_to_node = {}
+    if object_to_node_exclude is None:
+        object_to_node_exclude = tuple([])
+    if not isinstance(obj, object_to_node_exclude):
+        if object_to_node_mode == "id":
+            node = object_to_node.get(id(obj))
+        else:
+            node = None
+        if node is not None:
+            return node
+    node_cls = make_node_class_from_class(type(obj))
+    node = node_cls()
+    node.save()
+    for key, value in obj.items():
+        node_item = Item()
+        node_item.save()
+        node_key = save_node_from_object(
+            obj=key,
+            object_to_node=object_to_node,
+            object_to_node_mode=object_to_node_mode,
+            object_to_node_exclude=object_to_node_exclude,
+        )
+        node_value = save_node_from_object(value)
+        node_item.key.connect(node_key)
+        node_item.value.connect(node_value)
+        node.items.connect(node_item)
+    if object_to_node_mode == "id":
+        object_to_node[id(obj)] = node
+    return node
+
+
+def _save_node_from_frozendict_object(
+    obj,
+    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
+    object_to_node_exclude: tuple[type] | None = None,
+):
+    if object_to_node is None:
+        object_to_node = {}
+    if object_to_node_exclude is None:
+        object_to_node_exclude = tuple([])
+    if not isinstance(obj, object_to_node_exclude):
+        if object_to_node_mode == "id":
+            node = object_to_node.get(id(obj))
+        elif object_to_node_mode == "hash":
+            try:
+                hash(obj)
+            except TypeError:
+                pass
+            else:
+                hashable = True
+                node = object_to_node.get(obj)
+        else:
+            node = None
+        if node is not None:
+            return node
+    node_cls = make_node_class_from_class(type(obj))
+    node = node_cls()
+    node.save()
+    for key, value in obj.items():
+        node_item = Item()
+        node_item.save()
+        node_key = save_node_from_object(
+            obj=key,
+            object_to_node=object_to_node,
+            object_to_node_mode=object_to_node_mode,
+            object_to_node_exclude=object_to_node_exclude,
+        )
+        node_value = save_node_from_object(value)
+        node_item.key.connect(node_key)
+        node_item.value.connect(node_value)
+        node.items.connect(node_item)
+    if object_to_node_mode == "id":
+        object_to_node[id(obj)] = node
+    elif object_to_node_mode == "hash":
+        if hashable:
+            object_to_node[obj] = node
+    return node
+
+
 _save_node_from_object_rules = [
     ((str, int, float, bool), _save_node_from_basetype_object),
     (enum.Enum, _save_node_from_enum_object),
     (dataclasses.is_dataclass, _save_node_from_dataclass_object),
+    (list, _save_node_from_list_object),
+    (tuple, _save_node_from_tuple_object),
+    (set, _save_node_from_set_object),
+    (frozenset, _save_node_from_frozenset_object),
+    (dict, _save_node_from_dict_object),
+    (frozendict.frozendict, _save_node_from_frozendict_object),
 ]
 
 
