@@ -908,50 +908,6 @@ def _save_node_from_list_object(
     return node
 
 
-def _save_node_from_tuple_object(
-    obj,
-    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
-    object_to_node_exclude: tuple[type] | None = None,
-):
-    if object_to_node is None:
-        object_to_node = {}
-    if object_to_node_exclude is None:
-        object_to_node_exclude = tuple([])
-    if not isinstance(obj, object_to_node_exclude):
-        if object_to_node_mode == "id":
-            node = object_to_node.get(id(obj))
-        elif object_to_node_mode == "hash":
-            try:
-                hash(obj)
-            except TypeError:
-                pass
-            else:
-                hashable = True
-                node = object_to_node.get(obj)
-        else:
-            node = None
-        if node is not None:
-            return node
-    node_cls = make_node_class_from_class(type(obj))
-    node = node_cls()
-    node.save()
-    for i, element in enumerate(obj):
-        node_element = save_node_from_object(
-            obj=element,
-            object_to_node=object_to_node,
-            object_to_node_mode=object_to_node_mode,
-            object_to_node_exclude=object_to_node_exclude,
-        )
-        node.elements.connect(node_element, {"order": i})
-    if object_to_node_mode == "id":
-        object_to_node[id(obj)] = node
-    elif object_to_node_mode == "hash":
-        if hashable:
-            object_to_node[obj] = node
-    return node
-
-
 def _save_node_from_set_object(
     obj,
     object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
@@ -983,51 +939,6 @@ def _save_node_from_set_object(
     if object_to_node_mode == "id":
         object_to_node[id(obj)] = node
     return node
-
-
-def _save_node_from_frozenset_object(
-    obj,
-    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
-    object_to_node_exclude: tuple[type] | None = None,
-):
-    if object_to_node is None:
-        object_to_node = {}
-    if object_to_node_exclude is None:
-        object_to_node_exclude = tuple([])
-    if not isinstance(obj, object_to_node_exclude):
-        if object_to_node_mode == "id":
-            node = object_to_node.get(id(obj))
-        elif object_to_node_mode == "hash":
-            try:
-                hash(obj)
-            except TypeError:
-                pass
-            else:
-                hashable = True
-                node = object_to_node.get(obj)
-        else:
-            node = None
-        if node is not None:
-            return node
-    node_cls = make_node_class_from_class(type(obj))
-    node = node_cls()
-    node.save()
-    for element in obj:
-        node_element = save_node_from_object(
-            obj=element,
-            object_to_node=object_to_node,
-            object_to_node_mode=object_to_node_mode,
-            object_to_node_exclude=object_to_node_exclude,
-        )
-        node.elements.connect(node_element)
-    if object_to_node_mode == "id":
-        object_to_node[id(obj)] = node
-    elif object_to_node_mode == "hash":
-        if hashable:
-            object_to_node[obj] = node
-    return node
-
 
 def _save_node_from_dict_object(
     obj,
@@ -1069,60 +980,6 @@ def _save_node_from_dict_object(
         node.items.connect(node_item)
     if object_to_node_mode == "id":
         object_to_node[id(obj)] = node
-    return node
-
-
-def _save_node_from_frozendict_object(
-    obj,
-    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
-    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
-    object_to_node_exclude: tuple[type] | None = None,
-):
-    if object_to_node is None:
-        object_to_node = {}
-    if object_to_node_exclude is None:
-        object_to_node_exclude = tuple([])
-    if not isinstance(obj, object_to_node_exclude):
-        if object_to_node_mode == "id":
-            node = object_to_node.get(id(obj))
-        elif object_to_node_mode == "hash":
-            try:
-                hash(obj)
-            except TypeError:
-                pass
-            else:
-                hashable = True
-                node = object_to_node.get(obj)
-        else:
-            node = None
-        if node is not None:
-            return node
-    node_cls = make_node_class_from_class(type(obj))
-    node = node_cls()
-    node.save()
-    for key, value in obj.items():
-        node_item = Item()
-        node_item.save()
-        node_key = save_node_from_object(
-            obj=key,
-            object_to_node=object_to_node,
-            object_to_node_mode=object_to_node_mode,
-            object_to_node_exclude=object_to_node_exclude,
-        )
-        node_value = save_node_from_object(
-            obj=value,
-            object_to_node=object_to_node,
-            object_to_node_mode=object_to_node_mode,
-            object_to_node_exclude=object_to_node_exclude,
-        )
-        node_item.key.connect(node_key)
-        node_item.value.connect(node_value)
-        node.items.connect(node_item)
-    if object_to_node_mode == "id":
-        object_to_node[id(obj)] = node
-    elif object_to_node_mode == "hash":
-        if hashable:
-            object_to_node[obj] = node
     return node
 
 
