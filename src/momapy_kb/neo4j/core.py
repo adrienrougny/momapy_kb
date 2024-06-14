@@ -32,28 +32,31 @@ def query(query_str):
     return results, meta
 
 
-def _make_relationship_name_from_attr_name(attr_name):
-    inflect_engine = inflect.engine()
-    attr_name = re.sub(
-        "(.)([A-Z][a-z]+)",
-        r"\1_\2",
-        attr_name,
-    )
-    attr_name = re.sub("([a-z0-9])([A-Z])", r"\1_\2", attr_name).lower()
-    plurals = attr_name.split("_")
-    singulars = []
-    for i, plural in enumerate(plurals):
-        singular = inflect_engine.singular_noun(
-            plural
-        )  # returns False if already singular
-        if singular and singular != plural:
-            singulars.append(singular)
-            break
-        else:
-            singulars.append(plural)
-    singulars += plurals[i + 1 :]
-    singulars = [singular.upper() for singular in singulars]
-    rtype = f"HAS_{'_'.join(singulars)}"
+def _make_relationship_name_from_attr_name(attr_name, many=False):
+    if many:
+        inflect_engine = inflect.engine()
+        attr_name = re.sub(
+            "(.)([A-Z][a-z]+)",
+            r"\1_\2",
+            attr_name,
+        )
+        attr_name = re.sub("([a-z0-9])([A-Z])", r"\1_\2", attr_name).lower()
+        plurals = attr_name.split("_")
+        singulars = []
+        for i, plural in enumerate(plurals):
+            singular = inflect_engine.singular_noun(
+                plural
+            )  # returns False if already singular
+            if singular and singular != plural:
+                singulars.append(singular)
+                break
+            else:
+                singulars.append(plural)
+        singulars += plurals[i + 1 :]
+        singulars = [singular.upper() for singular in singulars]
+        rtype = f"HAS_{'_'.join(singulars)}"
+    else:
+        rtype = f"HAS_{attr_name.upper()}"
     return rtype
 
 
@@ -322,7 +325,9 @@ def _make_node_class_property_from_dataclass(
         # if we are already in the process of making the node class, we use a
         # reference of it instead, to avoid infinite recursion
         node_cls = _node_cls_name_from_cls_name(type_.__name__)
-    relationship_name = _make_relationship_name_from_attr_name(attr_name)
+    relationship_name = _make_relationship_name_from_attr_name(
+        attr_name, many=many
+    )
     if required:
         if many:
             cardinality = neomodel.OneOrMore
@@ -349,7 +354,9 @@ def _make_node_class_property_from_dict(
     if _ongoing is None:
         _ongoing = set([])
     node_cls = make_node_class_from_class(type_, _ongoing=_ongoing)
-    relationship_name = _make_relationship_name_from_attr_name(attr_name)
+    relationship_name = _make_relationship_name_from_attr_name(
+        attr_name, many=many
+    )
     if required:
         if many:
             cardinality = neomodel.OneOrMore
@@ -798,41 +805,6 @@ def _save_node_from_dataclass_object(
         elif object_to_node_mode == "hash":
             node = object_to_node.get(obj)
         if node is not None:
-            # below should be deleted after annotations are fixed
-            # node_cls = type(node)
-            # for node_cls_property in momapy_kb.neo4j.utils.get_properties(
-            #     node_cls
-            # ):
-            #     node_attr_name = node_cls_property.name
-            #     if node_attr_name == "annotations":
-            #         obj_attr_name = node_cls_property.attr_name
-            #         obj_attr_value = getattr(obj, obj_attr_name)
-            #         node_attr_value = _make_node_attr_value_from_object(
-            #             obj_attr_value,
-            #             object_to_node=object_to_node,
-            #             object_to_node_mode=object_to_node_mode,
-            #             object_to_node_exclude=object_to_node_exclude,
-            #         )
-            #         if (
-            #             node_attr_value is not None
-            #         ):  # as a consequence, cannot distinguish [] from None if type is list | None
-            #             for i, node_attr_element_value in enumerate(
-            #                 node_attr_value
-            #             ):
-            #                 if issubclass(
-            #                     type(node_attr_element_value)._cls_to_build,
-            #                     node_cls_property.final_type,
-            #                 ):
-            #                     relationship_manager = getattr(
-            #                         node, node_attr_name
-            #                     )
-            #                     if not relationship_manager.is_connected(
-            #                         node_attr_element_value
-            #                     ):
-            #                         relationship_manager.connect(
-            #                             node_attr_element_value
-            #                         )
-            #         break
             return node
     node_cls = make_node_class_from_class(type(obj))
     kwargs = {}
@@ -841,41 +813,52 @@ def _save_node_from_dataclass_object(
         node_attr_name = node_cls_property.name
         obj_attr_name = node_cls_property.attr_name
         obj_attr_value = getattr(obj, obj_attr_name)
-        node_attr_value = _make_node_attr_value_from_object(
-            obj_attr_value,
-            object_to_node=object_to_node,
-            object_to_node_mode=object_to_node_mode,
-            object_to_node_exclude=object_to_node_exclude,
-        )
-        if (
-            node_attr_value is not None
-        ):  # as a consequence, cannot distinguish [] from None if type is list | None
+        if obj_attr_value is not None:
             if isinstance(node_cls_property, neomodel.RelationshipTo):
                 if momapy_kb.neo4j.utils.is_many(node_cls_property):
-                    for i, node_attr_element_value in enumerate(
-                        node_attr_value
-                    ):
-                        if issubclass(
-                            type(node_attr_element_value)._cls_to_build,
+                    for i, obj_attr_value_element in enumerate(obj_attr_value):
+                        if isinstance(
+                            obj_attr_value_element,
                             node_cls_property.final_type,
                         ):
+                            node_attr_value_element = save_node_from_object(
+                                obj_attr_value_element,
+                                object_to_node=object_to_node,
+                                object_to_node_mode=object_to_node_mode,
+                                object_to_node_exclude=object_to_node_exclude,
+                            )
                             to_connect.append(
                                 (
                                     node_attr_name,
-                                    node_attr_element_value,
+                                    node_attr_value_element,
                                     {"order": i},
                                 )
                             )
                 else:
-                    if issubclass(
-                        type(node_attr_value)._cls_to_build,
+                    if isinstance(
+                        obj_attr_value,
                         node_cls_property.final_type,
                     ):
+                        node_attr_value = save_node_from_object(
+                            obj_attr_value,
+                            object_to_node=object_to_node,
+                            object_to_node_mode=object_to_node_mode,
+                            object_to_node_exclude=object_to_node_exclude,
+                        )
                         to_connect.append(
-                            (node_attr_name, node_attr_value, {})
+                            (
+                                node_attr_name,
+                                node_attr_value,
+                                {},
+                            )
                         )
             else:
-                kwargs[node_attr_name] = node_attr_value
+                kwargs[node_attr_name] = _make_node_attr_value_from_object(
+                    obj_attr_value,
+                    object_to_node=object_to_node,
+                    object_to_node_mode=object_to_node_mode,
+                    object_to_node_exclude=object_to_node_exclude,
+                )
     node = node_cls(**kwargs)
     node.save()
     for (
@@ -1075,7 +1058,12 @@ def _save_node_from_dict_object(
             object_to_node_mode=object_to_node_mode,
             object_to_node_exclude=object_to_node_exclude,
         )
-        node_value = save_node_from_object(value)
+        node_value = save_node_from_object(
+            obj=value,
+            object_to_node=object_to_node,
+            object_to_node_mode=object_to_node_mode,
+            object_to_node_exclude=object_to_node_exclude,
+        )
         node_item.key.connect(node_key)
         node_item.value.connect(node_value)
         node.items.connect(node_item)
