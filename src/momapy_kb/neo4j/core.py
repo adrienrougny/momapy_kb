@@ -1109,7 +1109,12 @@ def _save_node_from_frozendict_object(
             object_to_node_mode=object_to_node_mode,
             object_to_node_exclude=object_to_node_exclude,
         )
-        node_value = save_node_from_object(value)
+        node_value = save_node_from_object(
+            obj=value,
+            object_to_node=object_to_node,
+            object_to_node_mode=object_to_node_mode,
+            object_to_node_exclude=object_to_node_exclude,
+        )
         node_item.key.connect(node_key)
         node_item.value.connect(node_value)
         node.items.connect(node_item)
