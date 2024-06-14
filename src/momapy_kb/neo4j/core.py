@@ -1130,12 +1130,9 @@ _save_node_from_object_rules = [
     ((str, int, float, bool), _save_node_from_basetype_object),
     (enum.Enum, _save_node_from_enum_object),
     (dataclasses.is_dataclass, _save_node_from_dataclass_object),
-    (list, _save_node_from_list_object),
-    (tuple, _save_node_from_tuple_object),
-    (set, _save_node_from_set_object),
-    (frozenset, _save_node_from_frozenset_object),
-    (dict, _save_node_from_dict_object),
-    (frozendict.frozendict, _save_node_from_frozendict_object),
+    ((list, tuple), _save_node_from_list_object),
+    ((set, frozenset), _save_node_from_set_object),
+    ((dict, frozendict.frozendict), _save_node_from_dict_object),
 ]
 
 
