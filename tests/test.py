@@ -14,6 +14,7 @@ def list_dir(path):
     for file_name in os.listdir(path):
         if not file_name.startswith("."):
             files.append((file_name, os.path.join(path, file_name)))
+            break
     return files
 
 
