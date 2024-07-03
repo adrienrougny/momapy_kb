@@ -12,6 +12,7 @@ import frozendict
 import neomodel
 import inflect
 
+import momapy.core
 import momapy.drawing
 
 import momapy_kb.utils
@@ -939,6 +940,7 @@ def _save_node_from_set_object(
     if object_to_node_mode == "id":
         object_to_node[id(obj)] = node
     return node
+
 
 def _save_node_from_dict_object(
     obj,
