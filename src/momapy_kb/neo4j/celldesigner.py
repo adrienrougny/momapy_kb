@@ -5,12 +5,18 @@ import momapy_kb.neo4j.core
 import momapy.core
 import momapy.celldesigner.core
 
-for attr_name in dir(momapy.sbgn.pd):
+module = momapy.celldesigner.core
+
+for attr_name in dir(module):
     if not attr_name.startswith("_"):
-        attr_value = getattr(momapy.sbgn.pd, attr_name)
+        attr_value = getattr(module, attr_name)
         if isinstance(attr_value, type) and issubclass(
             attr_value,
-            (momapy.celldesigner.CellDesignerModelElement, momapy.core.Model),
+            (
+                momapy.core.ModelElement,
+                momapy.core.Layout,
+                momapy.core.Map,
+            ),
         ):
             node_class = momapy_kb.neo4j.core.make_node_class_from_class(
                 attr_value

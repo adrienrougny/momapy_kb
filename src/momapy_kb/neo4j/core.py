@@ -460,7 +460,7 @@ def _make_node_class_properties_from_type(attr_type, attr_name, _ongoing=None):
 
 
 class MomapyKBNode(neomodel.StructuredNode):
-    pass
+    _cls_to_build = None
 
 
 class String(MomapyKBNode):

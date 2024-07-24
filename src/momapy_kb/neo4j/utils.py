@@ -111,12 +111,7 @@ def make_doc_from_module(
                 node_cls = relationship["node_class"]
                 if (
                     node_cls.__name__ not in node_label_to_node_spec
-                    and not any(
-                        [
-                            issubclass(node_cls._cls_to_build, excluded_cls)
-                            for excluded_cls in exclude
-                        ]
-                    )
+                    and not issubclass(node_cls, tuple(exclude))
                 ):
                     node_label_to_node_spec = _prepare_node_spec(
                         node_cls,
@@ -145,21 +140,12 @@ def make_doc_from_module(
         if (
             isinstance(attr_value, type)
             and issubclass(attr_value, neomodel.StructuredNode)
-            and not any(
-                [
-                    issubclass(attr_value, excluded_cls)
-                    for excluded_cls in exclude
-                ]
-            )
+            and not issubclass(attr_value, tuple(exclude))
+            and attr_value.__name__ not in node_label_to_node_spec
         ):
-            node_cls = attr_value
-            if (
-                node_cls is not None
-                and node_cls.__name__ not in node_label_to_node_spec
-            ):
-                node_label_to_node_spec |= _prepare_node_spec(
-                    node_cls, exclude=exclude
-                )
+            node_label_to_node_spec |= _prepare_node_spec(
+                attr_value, exclude=exclude
+            )
     node_specs = list(node_label_to_node_spec.values())
     node_specs.sort(key=lambda node_spec: node_spec["label"])
     s = template.render(node_specs=node_specs)
