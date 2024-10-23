@@ -28,7 +28,12 @@ def evaluate_forward_ref(forward_ref):
         forward_module = importlib.import_module(forward_module_name)
         globals()[forward_module_name] = forward_module
         globals()[forward_cls_name] = getattr(forward_module, forward_cls_name)
-    type_ = forward_ref._evaluate(globals(), locals(), frozenset())
+    type_ = forward_ref._evaluate(
+        globalns=globals(),
+        localns=locals(),
+        type_params=frozenset(),
+        recursive_guard=set([]),
+    )
     return type_
 
 
