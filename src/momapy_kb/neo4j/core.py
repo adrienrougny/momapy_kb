@@ -1015,3 +1015,22 @@ def save_node_from_object(
         object_to_node_exclude=object_to_node_exclude,
     )
     return node
+
+
+def save_nodes_from_objects(
+    objs,
+    object_to_node: dict[typing.Any, neomodel.StructuredNode] | None = None,
+    object_to_node_mode: typing.Literal["none", "id", "hash"] = "id",
+    object_to_node_exclude: tuple[type] | None = None,
+):
+    if object_to_node is None:
+        object_to_node = {}
+    if object_to_node_exclude is None:
+        object_to_node_exclude = tuple([])
+    nodes = []
+    for obj in objs:
+        node = save_node_from_object(
+            obj, object_to_node, object_to_node_mode, object_to_node_exclude
+        )
+        nodes.append(node)
+    return nodes
