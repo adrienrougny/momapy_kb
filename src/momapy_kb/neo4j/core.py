@@ -12,6 +12,8 @@ import frozendict
 import neomodel
 import inflect
 
+import neo4j
+
 import momapy.core
 import momapy.drawing
 
@@ -20,8 +22,20 @@ import momapy_kb.neo4j.utils
 
 
 def connect(hostname, username, password, protocol="bolt", port="7687"):
-    connection_str = f"{protocol}://{username}:{password}@{hostname}:{port}"
-    neomodel.config.DATABASE_URL = connection_str
+    connection_url = f"{protocol}://{username}:{password}@{hostname}:{port}"
+    neomodel.db.set_connection(connection_url)
+
+
+def close_connection():
+    neomodel.db.close_connection()
+
+
+def is_connected():
+    try:
+        run("RETURN 1")
+    except neo4j.exceptions.ServiceUnavailable:
+        return False
+    return True
 
 
 def delete_all():
