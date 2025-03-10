@@ -28,9 +28,9 @@ def delete_all():
     results, meta = neomodel.db.cypher_query("MATCH (n) DETACH DELETE n")
 
 
-def query(query_str):
-    results, meta = neomodel.db.cypher_query(query_str)
-    return results, meta
+def run(query):
+    result, meta = neomodel.db.cypher_query(query)
+    return result, meta
 
 
 def _make_relationship_name_from_attr_name(attr_name, many=False):
