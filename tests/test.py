@@ -38,12 +38,12 @@ if __name__ == "__main__":
     momapy_kb.neo4j.core.connect(
         credentials.HOST_NAME, credentials.USER_NAME, credentials.PASSWORD
     )
-    momapy_kb.neo4j.core.delete_all()
-    for file_name, file_path in list_dir(
-        "/home/rougny/research/commute/commute_dm_develop/build/maps/covid/celldesigner/"
-    ):
-        read_and_save_map(file_name, file_path)
-    for file_name, file_path in list_dir(
-        "/home/rougny/research/commute/commute_dm_develop/build/maps/pd/celldesigner/"
-    ):
-        read_and_save_map(file_name, file_path)
+    # momapy_kb.neo4j.core.delete_all()
+    # for file_name, file_path in list_dir(
+    #     "/home/rougny/research/commute/commute_dm_develop/build/maps/covid/celldesigner/"
+    # ):
+    #     read_and_save_map(file_name, file_path)
+    # for file_name, file_path in list_dir(
+    #     "/home/rougny/research/commute/commute_dm_develop/build/maps/pd/celldesigner/"
+    # ):
+    #     read_and_save_map(file_name, file_path)
