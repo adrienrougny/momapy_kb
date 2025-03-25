@@ -1,1 +1,1 @@
-# momapy_neo4j
+# momapy_kb
