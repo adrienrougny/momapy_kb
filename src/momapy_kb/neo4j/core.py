@@ -24,6 +24,7 @@ import momapy_kb.neo4j.utils
 def connect(hostname, username, password, protocol="bolt", port="7687"):
     connection_url = f"{protocol}://{username}:{password}@{hostname}:{port}"
     neomodel.db.set_connection(connection_url)
+    run("RETURN 1")  # return an error if not connected
 
 
 def close_connection():
