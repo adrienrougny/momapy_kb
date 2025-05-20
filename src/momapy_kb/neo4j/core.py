@@ -21,9 +21,21 @@ import momapy_kb.utils
 import momapy_kb.neo4j.utils
 
 
-def connect(hostname, username, password, protocol="bolt", port="7687"):
-    connection_url = f"{protocol}://{username}:{password}@{hostname}:{port}"
-    neomodel.db.set_connection(connection_url)
+def connect(
+    hostname,
+    username,
+    password,
+    protocol="neo4j",
+    port="7687",
+    notifications_min_severity=None,
+):
+    uri = f"{protocol}://{hostname}:{port}"
+    driver = neo4j.GraphDatabase().driver(
+        uri,
+        auth=(username, password),
+        notifications_min_severity=notifications_min_severity,
+    )
+    neomodel.db.set_connection(driver=driver)
     run("RETURN 1")  # return an error if not connected
 
 
