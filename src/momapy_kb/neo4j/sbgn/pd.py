@@ -1,19 +1,25 @@
 import sys
 
-import momapy_kb.neo4j.core
+import fieldz_kb.neo4j
 
 import momapy.core
-import momapy.sbgn.core
 import momapy.sbgn.pd
 
-for attr_name in dir(momapy.sbgn.pd):
+module = momapy.sbgn.pd
+for attr_name in dir(module):
     if not attr_name.startswith("_"):
-        attr_value = getattr(momapy.sbgn.pd, attr_name)
+        attr_value = getattr(module, attr_name)
         if isinstance(attr_value, type) and issubclass(
             attr_value,
-            (momapy.sbgn.core.SBGNModelElement, momapy.core.Model),
+            (
+                momapy.core.ModelElement,
+                momapy.core.LayoutElement,
+                momapy.core.Map,
+                momapy.core.Model,
+                momapy.core.Layout,
+            ),
         ):
-            node_class = momapy_kb.neo4j.core.make_node_class_from_class(
-                attr_value
+            node_class = fieldz_kb.neo4j.core.get_or_make_node_class_from_type(
+                attr_value, make_node_classes_recursively=True
             )
             setattr(sys.modules[__name__], node_class.__name__, node_class)

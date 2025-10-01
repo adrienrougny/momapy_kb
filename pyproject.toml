@@ -24,3 +24,8 @@ dev = [
 
 [tool.basedpyright]
 typeCheckingMode = "off"
+
+[dependency-groups]
+dev = [
+    "notebook>=7.4.7",
+]

@@ -1,12 +1,11 @@
 import sys
-import typing
 
 import fieldz_kb.neo4j
 
 import momapy.core
-import momapy.celldesigner.core
+import momapy.sbgn.af
 
-module = momapy.celldesigner.core
+module = momapy.sbgn.af
 for attr_name in dir(module):
     if not attr_name.startswith("_"):
         attr_value = getattr(module, attr_name)
