@@ -1,5 +1,8 @@
 import types
 import importlib
+import collections.abc
+import operator
+import functools
 
 import neomodel
 import colorama
@@ -35,9 +38,7 @@ def evaluate_forward_ref(forward_ref):
             type_params=frozenset(),
             recursive_guard=set([]),
         )
-    except (
-        TypeError
-    ):  # on some python versions there is not type_params argument
+    except TypeError:  # on some python versions there is not type_params argument
         type_ = forward_ref._evaluate(
             globalns=globals(),
             localns=locals(),
@@ -46,9 +47,7 @@ def evaluate_forward_ref(forward_ref):
     return type_
 
 
-def pretty_print(
-    neomodel_node_cls, max_depth=0, exclude_cls=None, _depth=0, _indent=0
-):
+def pretty_print(neomodel_node_cls, max_depth=0, exclude_cls=None, _depth=0, _indent=0):
     def _print_with_indent(s, indent):
         s_indents = "\t" * indent
         print(f"{s_indents}{s}")
@@ -98,3 +97,16 @@ def pretty_print(
                 _depth=_depth + 1,
                 _indent=_indent + 1,
             )
+
+
+def flatten_collection(input_collection):
+    def _flatten_rec(a, b):
+        if isinstance(b, collections.abc.Sequence) and not isinstance(
+            b, (str, bytes, bytearray)
+        ):
+            b = flatten_collection(b)
+        else:
+            b = [b]
+        return operator.iconcat(a, b)
+
+    return functools.reduce(_flatten_rec, input_collection, [])
