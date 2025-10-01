@@ -122,6 +122,12 @@ def make_object_from_node(node, node_element_id_to_object=None):
     )
 
 
+def cypher_query_as_objects(query, params=None, node_element_id_to_object=None):
+    return fieldz_kb.neo4j.core.cypher_query_as_objects(
+        query=query, params=params, node_element_id_to_object=node_element_id_to_object
+    )
+
+
 def save_from_file(
     file_path,
     return_type: typing.Literal["map", "model", "layout"] = "map",
@@ -160,9 +166,9 @@ def make_layout_elements_from_model_element_node(model_element_node):
     return layout_elements
 
 
-def make_layout_element_results_from_cypher_query(query, params=None):
+def cypher_query_as_layout_elements(query, params=None):
     layout_element_results = []
-    results, _ = cypher_query(query, params=params, resolve_objects=True)
+    results, meta = cypher_query(query, params=params, resolve_objects=True)
     for row in results:
         layout_element_nodes = []
         for element in row:
@@ -189,4 +195,4 @@ def make_layout_element_results_from_cypher_query(query, params=None):
                             to_add.append(attr_value)
         layout_elements += to_add
         layout_element_results.append(layout_elements)
-    return layout_element_results
+    return layout_element_results, meta
