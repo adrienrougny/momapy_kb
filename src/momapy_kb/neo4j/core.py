@@ -4,6 +4,8 @@ import fieldz_kb.neo4j.core
 import momapy.core
 import momapy.drawing
 
+import momapy_kb.utils
+
 
 def connect(
     hostname,
@@ -146,16 +148,26 @@ def save_from_file(
 
 def get_layout_element_nodes_from_model_element_node(model_element_node):
     query = """
-        MATCH (model_element:ModelElement)<-[:HAS_VALUE]-(item:Item)-[:HAS_KEY]->(layout_element:LayoutElement)
+        MATCH (mapping:LayoutModelMapping)-[:HAS_ITEM]->(item:Item)-[:HAS_VALUE]->(model_element:ModelElement),
+        (item)-[:HAS_KEY]->(key)
         WHERE elementId(model_element) = $element_id
-        RETURN layout_element
+        RETURN key
     """
     results, _ = cypher_query(
         query,
         params={"element_id": model_element_node.element_id},
         resolve_objects=True,
     )
-    return [_[0] for _ in results]
+    nodes = momapy_kb.utils.flatten_collection(results)
+    layout_element_nodes = []
+    for node in nodes:
+        if isinstance(
+            node, fieldz_kb.neo4j.core._type_to_node_class[momapy.core.LayoutElement]
+        ):
+            layout_element_nodes.append(node)
+        else:
+            layout_element_nodes += node.items.all()
+    return layout_element_nodes
 
 
 def make_layout_elements_from_model_element_node(model_element_node):
@@ -170,6 +182,7 @@ def cypher_query_as_layout_elements(query, params=None):
     layout_element_results = []
     results, meta = cypher_query(query, params=params, resolve_objects=True)
     for row in results:
+        row = momapy_kb.utils.flatten_collection(row)
         layout_element_nodes = []
         for element in row:
             if isinstance(
