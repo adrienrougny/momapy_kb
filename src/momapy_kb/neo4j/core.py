@@ -100,6 +100,18 @@ def save_from_object(
     )
 
 
+def save_from_objects(
+    objects,
+    integration_mode: typing.Literal["hash", "id"] | None = None,
+    exclude_from_integration=None,
+):
+    fieldz_kb.neo4j.core.save_from_objects(
+        objects,
+        integration_mode=integration_mode,
+        exclude_from_integration=exclude_from_integration,
+    )
+
+
 def _make_none_value_from_node(node, node_element_id_to_object):
     return momapy.drawing.NoneValue
 
