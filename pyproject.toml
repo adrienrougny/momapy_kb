@@ -18,14 +18,12 @@ distribution = true
 
 [tool.pdm.dev-dependencies]
 dev = [
-    "-e file:///${PROJECT_ROOT}/../momapy#egg=momapy",
-    "-e file:///home/rougny/code/fieldz_kb#egg=fieldz-kb",
+  "-e file:///${PROJECT_ROOT}/../momapy#egg=momapy",
+  "-e file:///home/rougny/code/fieldz_kb#egg=fieldz-kb",
 ]
 
 [tool.basedpyright]
 typeCheckingMode = "off"
 
 [dependency-groups]
-dev = [
-    "notebook>=7.4.7",
-]
+dev = ["notebook>=7.4.7"]
