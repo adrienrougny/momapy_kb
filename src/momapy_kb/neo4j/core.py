@@ -8,30 +8,9 @@ import momapy.io.core
 import momapy_kb.utils
 
 
-def connect(
-    hostname,
-    username,
-    password,
-    protocol="neo4j",
-    port="7687",
-    notifications_min_severity: typing.Literal["off", "warning", "information"] = None,
-):
-    fieldz_kb.neo4j.core.connect(
-        hostname=hostname,
-        username=username,
-        password=password,
-        protocol=protocol,
-        port=port,
-        notifications_min_severity=notifications_min_severity,
-    )
-
-
-def delete_all():
-    fieldz_kb.neo4j.core.delete_all()
-
-
-def cypher_query(query, params=None, resolve_objects=True):
-    return fieldz_kb.neo4j.core.cypher_query(query, params, resolve_objects)
+connect = fieldz_kb.neo4j.core.connect
+delete_all = fieldz_kb.neo4j.core.delete_all
+cypher_query = fieldz_kb.neo4j.core.cypher_query
 
 
 class NoneValueType(fieldz_kb.neo4j.core.BaseNode):
