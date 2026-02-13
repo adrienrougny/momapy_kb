@@ -15,7 +15,7 @@ import momapy.coloring
 import momapy.styling
 import momapy.sbgn.io.sbgnml
 import momapy.celldesigner.io.celldesigner
-import momapy.io
+import momapy.io.core
 
 
 #
@@ -103,7 +103,7 @@ def display(obj, markers=None, xsep=20.0, ysep=20.0, scale=1.0, style_sheet=None
     layout_elements = []
     for element in obj:
         if isinstance(element, str):
-            layout_element = momapy.io.read(element, return_type="layout").obj
+            layout_element = momapy.io.core.read(element, return_type="layout").obj
         elif isinstance(element, momapy.core.Map):
             layout_element = element.layout
         elif isinstance(element, momapy.core.LayoutElement):
