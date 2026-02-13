@@ -3,6 +3,7 @@ import typing
 import fieldz_kb.neo4j.core
 import momapy.core
 import momapy.drawing
+import momapy.io.core
 
 import momapy_kb.utils
 
@@ -149,7 +150,7 @@ def save_from_file(
     with_model=True,
     integration_mode: typing.Literal["hash", "id"] | None = None,
 ):
-    object_ = momapy.io.read(
+    object_ = momapy.io.core.read(
         file_path=file_path,
         return_type=return_type,
         with_model=with_model,
