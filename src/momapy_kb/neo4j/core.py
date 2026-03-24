@@ -1,7 +1,8 @@
 import typing
 
 import fieldz_kb.neo4j.core
-import momapy.core
+import momapy.core.mapping
+import momapy.core.elements
 import momapy.drawing
 import momapy.io.core
 
@@ -36,7 +37,7 @@ class LayoutModelMapping(fieldz_kb.neo4j.core.FrozenDict):
     pass
 
 
-fieldz_kb.neo4j.core._type_to_node_class[momapy.core.LayoutModelMapping] = (
+fieldz_kb.neo4j.core._type_to_node_class[momapy.core.mapping.LayoutModelMapping] = (
     LayoutModelMapping
 )
 
@@ -63,7 +64,7 @@ def _make_nodes_from_layout_model_mapping_object(
 
 
 fieldz_kb.neo4j.core.register_make_nodes_function(
-    momapy.core.LayoutModelMapping,
+    momapy.core.mapping.LayoutModelMapping,
     _make_nodes_from_layout_model_mapping_object,
 )
 
@@ -97,7 +98,7 @@ def _make_none_value_from_node(node, node_element_id_to_object):
 
 
 def _make_layout_model_mapping_object_from_node(node, node_element_id_to_object):
-    return momapy.core.LayoutModelMapping(
+    return momapy.core.mapping.LayoutModelMapping(
         fieldz_kb.neo4j.core._make_dict_object_from_node(node)
     )
 
@@ -154,7 +155,10 @@ def get_layout_element_nodes_from_model_element_node(model_element_node):
     layout_element_nodes = []
     for node in nodes:
         if isinstance(
-            node, fieldz_kb.neo4j.core._type_to_node_class[momapy.core.LayoutElement]
+            node,
+            fieldz_kb.neo4j.core._type_to_node_class[
+                momapy.core.elements.LayoutElement
+            ],
         ):
             layout_element_nodes.append(node)
         else:
@@ -179,12 +183,16 @@ def cypher_query_as_layout_elements(query, params=None):
         for element in row:
             if isinstance(
                 element,
-                fieldz_kb.neo4j.core._type_to_node_class[momapy.core.LayoutElement],
+                fieldz_kb.neo4j.core._type_to_node_class[
+                    momapy.core.elements.LayoutElement
+                ],
             ):
                 layout_element_nodes.append(element)
             elif isinstance(
                 element,
-                fieldz_kb.neo4j.core._type_to_node_class[momapy.core.ModelElement],
+                fieldz_kb.neo4j.core._type_to_node_class[
+                    momapy.core.elements.ModelElement
+                ],
             ):
                 layout_element_nodes += (
                     get_layout_element_nodes_from_model_element_node(element)
@@ -193,10 +201,10 @@ def cypher_query_as_layout_elements(query, params=None):
         to_add = []
         for layout_element in layout_elements:
             for sub_layout_element in [layout_element] + layout_element.descendants():
-                if isinstance(sub_layout_element, momapy.core.Arc):
+                if isinstance(sub_layout_element, momapy.core.layout.Arc):
                     for attr_name in ["source", "target"]:
                         attr_value = getattr(sub_layout_element, attr_name, None)
-                        if isinstance(attr_value, momapy.core.LayoutElement):
+                        if isinstance(attr_value, momapy.core.elements.LayoutElement):
                             to_add.append(attr_value)
         layout_elements += to_add
         layout_element_results.append(layout_elements)
