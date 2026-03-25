@@ -1,120 +1,23 @@
 import typing
 
 import fieldz_kb.neo4j.core
+
 import momapy.core.mapping
 import momapy.core.elements
 import momapy.drawing
 import momapy.io.core
+import momapy.utils
 
+import momapy_kb.core
 import momapy_kb.utils
+import momapy_kb.neo4j.types
 
 
 connect = fieldz_kb.neo4j.core.connect
 delete_all = fieldz_kb.neo4j.core.delete_all
 cypher_query = fieldz_kb.neo4j.core.cypher_query
-
-
-class NoneValueType(fieldz_kb.neo4j.core.BaseNode):
-    pass
-
-
-fieldz_kb.neo4j.core._type_to_node_class[momapy.drawing.NoneValueType] = NoneValueType
-
-
-def _make_nodes_from_none_value(
-    none_value, integration_mode, exclude_from_integration, object_to_node
-):
-    node = NoneValueType()
-    return [node], []
-
-
-fieldz_kb.neo4j.core.register_make_nodes_function(
-    momapy.drawing.NoneValueType, _make_nodes_from_none_value
-)
-
-
-class LayoutModelMapping(fieldz_kb.neo4j.core.FrozenDict):
-    pass
-
-
-fieldz_kb.neo4j.core._type_to_node_class[momapy.core.mapping.LayoutModelMapping] = (
-    LayoutModelMapping
-)
-
-
-def _make_nodes_from_layout_model_mapping_object(
-    dict_object, integration_mode, exclude_from_integration, object_to_node
-):
-    node = LayoutModelMapping()
-    nodes = [node]
-    to_connect = []
-    for key, value in dict_object.items():
-        nodes_item, to_connect_item = fieldz_kb.neo4j.core._make_nodes_from_dict_item(
-            key,
-            value,
-            integration_mode=integration_mode,
-            exclude_from_integration=exclude_from_integration,
-            object_to_node=object_to_node,
-        )
-        nodes += nodes_item
-        to_connect += to_connect_item
-        node_item = nodes_item[0]
-        to_connect.append((node, "items", node_item, {}))
-    return nodes, to_connect
-
-
-fieldz_kb.neo4j.core.register_make_nodes_function(
-    momapy.core.mapping.LayoutModelMapping,
-    _make_nodes_from_layout_model_mapping_object,
-)
-
-
-def save_from_object(
-    object_,
-    integration_mode: typing.Literal["hash", "id"] | None = None,
-    exclude_from_integration=None,
-):
-    fieldz_kb.neo4j.core.save_from_object(
-        object_,
-        integration_mode=integration_mode,
-        exclude_from_integration=exclude_from_integration,
-    )
-
-
-def save_from_objects(
-    objects,
-    integration_mode: typing.Literal["hash", "id"] | None = None,
-    exclude_from_integration=None,
-):
-    fieldz_kb.neo4j.core.save_from_objects(
-        objects,
-        integration_mode=integration_mode,
-        exclude_from_integration=exclude_from_integration,
-    )
-
-
-def _make_none_value_from_node(node, node_element_id_to_object):
-    return momapy.drawing.NoneValue
-
-
-def _make_layout_model_mapping_object_from_node(node, node_element_id_to_object):
-    return momapy.core.mapping.LayoutModelMapping(
-        fieldz_kb.neo4j.core._make_dict_object_from_node(node)
-    )
-
-
-fieldz_kb.neo4j.core.register_make_object_function(
-    NoneValueType, _make_none_value_from_node
-)
-fieldz_kb.neo4j.core.register_make_object_function(
-    LayoutModelMapping, _make_layout_model_mapping_object_from_node
-)
-
-
-def make_object_from_node(node, node_element_id_to_object=None):
-    return fieldz_kb.neo4j.core.make_object_from_node(
-        node, node_element_id_to_object=node_element_id_to_object
-    )
+save_from_object = fieldz_kb.neo4j.core.save_from_object
+save_from_objects = fieldz_kb.neo4j.core.save_from_objects
 
 
 def cypher_query_as_objects(query, params=None, node_element_id_to_object=None):
@@ -170,7 +73,9 @@ def make_layout_elements_from_model_element_node(model_element_node):
     layout_element_nodes = get_layout_element_nodes_from_model_element_node(
         model_element_node
     )
-    layout_elements = [make_object_from_node(_) for _ in layout_element_nodes]
+    layout_elements = [
+        fieldz_kb.neo4j.core.make_object_from_node(_) for _ in layout_element_nodes
+    ]
     return layout_elements
 
 
@@ -209,3 +114,60 @@ def cypher_query_as_layout_elements(query, params=None):
         layout_elements += to_add
         layout_element_results.append(layout_elements)
     return layout_element_results, meta
+
+
+def save_collections_from_entries(
+    collection_names_and_entries,
+    delete_all=False,
+):
+    if delete_all:
+        delete_all()
+    collections = []
+    for collection_name, collection_entries in collection_names_and_entries:
+        collection = momapy_kb.core.Collection(
+            name=collection_name, entries=frozenset(collection_entries)
+        )
+        collections.append(collection)
+    save_from_objects(
+        collections,
+        integration_mode="hash",
+    )
+
+
+def save_collections_from_file_paths(
+    collection_names_and_file_paths,
+    return_type: typing.Literal["map", "model", "layout"] = "map",
+    delete_all=False,
+):
+    if delete_all:
+        delete_all()
+    collection_names_and_entries = []
+    for (
+        collection_name,
+        collection_file_paths,
+    ) in collection_names_and_file_paths:
+        collection_entries = []
+        for file_path in collection_file_paths:
+            reader_result = momapy.io.core.read(file_path, return_type=return_type)
+            model_id = file_path.stem
+            model = reader_result.obj
+            annotations = reader_result.annotations
+            ids = reader_result.ids
+            collection_entry = momapy_kb.core.CollectionEntry(
+                id_=model_id,
+                model=model,
+                file_path=file_path,
+                rdf_annotations=annotations,
+                ids=ids,
+            )
+            collection_entries.append(collection_entry)
+        collection_names_and_entries.append(
+            (
+                collection_name,
+                collection_entries,
+            )
+        )
+    save_collections_from_entries(
+        collection_names_and_entries,
+        delete_all=delete_all,
+    )
