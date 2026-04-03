@@ -1,9 +1,11 @@
 import sys
-import typing
 
-import fieldz_kb.neo4j
+import fieldz_kb.neo4j.core
 
-import momapy.core
+import momapy.core.map
+import momapy.core.layout
+import momapy.core.model
+import momapy.core.elements
 import momapy.celldesigner.core
 
 module = momapy.celldesigner.core
@@ -13,11 +15,11 @@ for attr_name in dir(module):
         if isinstance(attr_value, type) and issubclass(
             attr_value,
             (
-                momapy.core.ModelElement,
-                momapy.core.LayoutElement,
-                momapy.core.Map,
-                momapy.core.Model,
-                momapy.core.Layout,
+                momapy.core.elements.ModelElement,
+                momapy.core.elements.LayoutElement,
+                momapy.core.map.Map,
+                momapy.core.model.Model,
+                momapy.core.layout.Layout,
             ),
         ):
             node_class = fieldz_kb.neo4j.core.get_or_make_node_class_from_type(
