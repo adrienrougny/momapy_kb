@@ -20,6 +20,10 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = ["notebook>=7.4.7"]
+test = [
+    "pytest>=8.0",
+    "testcontainers[neo4j]>=4.0",
+]
 
 [tool.uv.sources]
 momapy = { path = "../momapy", editable = true }
