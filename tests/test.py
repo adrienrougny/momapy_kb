@@ -5,7 +5,8 @@ import momapy.builder
 import momapy.celldesigner.io.celldesigner
 import momapy.io
 
-import momapy_kb.neo4j.core
+import momapy_kb.lpg.core
+import momapy_kb.lpg.backends.neo4j
 import credentials
 
 
@@ -18,7 +19,7 @@ def list_dir(path):
     return files
 
 
-def read_and_save_map(file_name, file_path):
+def read_and_save_map(session, file_name, file_path):
     print(file_path)
     try:
         m = momapy.io.read(file_path)
@@ -29,21 +30,16 @@ def read_and_save_map(file_name, file_path):
         print(f"error in reading: {file_path}")
     else:
         try:
-            momapy_kb.neo4j.core.save_node_from_object(m)
+            session.save_from_object(m)
         except Exception as e:
             print(f"error in storing {file_path}")
 
 
 if __name__ == "__main__":
-    momapy_kb.neo4j.core.connect(
-        credentials.HOST_NAME, credentials.USER_NAME, credentials.PASSWORD
+    backend = momapy_kb.lpg.backends.neo4j.Neo4jBackend(
+        hostname=credentials.HOST_NAME,
+        username=credentials.USER_NAME,
+        password=credentials.PASSWORD,
     )
-    # momapy_kb.neo4j.core.delete_all()
-    # for file_name, file_path in list_dir(
-    #     "/home/rougny/research/commute/commute_dm_develop/build/maps/covid/celldesigner/"
-    # ):
-    #     read_and_save_map(file_name, file_path)
-    # for file_name, file_path in list_dir(
-    #     "/home/rougny/research/commute/commute_dm_develop/build/maps/pd/celldesigner/"
-    # ):
-    #     read_and_save_map(file_name, file_path)
+    with momapy_kb.lpg.core.Session(backend) as session:
+        pass
