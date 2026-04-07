@@ -8,17 +8,11 @@ dependencies = [
   "jinja2>=3.1.3",
   "frozendict>=2.4.6",
   "momapy",
+  "fieldz-kb[all]",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
 license = { text = "MIT" }
-
-[project.optional-dependencies]
-clingo = ["fieldz-kb[clingo]"]
-neo4j = ["fieldz-kb[neo4j]"]
-falkordb = ["fieldz-kb[falkordb]"]
-falkordblite = ["fieldz-kb[falkordblite]"]
-all = ["momapy_kb[clingo,neo4j,falkordb,falkordblite]"]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
@@ -29,7 +23,4 @@ dev = ["notebook>=7.4.7"]
 
 [tool.uv.sources]
 momapy = { path = "../momapy", editable = true }
-fieldz-kb = { workspace = true, editable = true }
-
-[tool.uv.workspace]
-members = ["fieldz_kb"]
+fieldz-kb = { path = "../fieldz_kb", editable = true }
