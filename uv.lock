@@ -1641,6 +1641,7 @@ dev = [
 docs = [
     { name = "griffe-fieldz" },
     { name = "griffe-inherited-docstrings" },
+    { name = "mkdocs" },
     { name = "mkdocs-autorefs" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
@@ -1667,6 +1668,7 @@ dev = [
 docs = [
     { name = "griffe-fieldz", specifier = ">=0.2" },
     { name = "griffe-inherited-docstrings", specifier = ">=1.0" },
+    { name = "mkdocs", specifier = ">=1.6" },
     { name = "mkdocs-autorefs", specifier = ">=1.0" },
     { name = "mkdocs-material", specifier = ">=9.0" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.24" },

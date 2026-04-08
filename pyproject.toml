@@ -25,6 +25,7 @@ test = [
     "testcontainers[neo4j]>=4.0",
 ]
 docs = [
+    "mkdocs>=1.6",
     "mkdocs-material>=9.0",
     "mkdocstrings[python]>=0.24",
     "mkdocs-autorefs>=1.0",
