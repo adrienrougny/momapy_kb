@@ -2,9 +2,9 @@
 
 A library to integrate [momapy](https://github.com/adrienrougny/momapy) maps into graph databases and logic programming backends.
 
-## Features
+Built on top of [fieldz_kb](https://github.com/adrienrougny/fieldz_kb), momapy_kb provides:
 
-- **Multiple LPG backends** -- Neo4j, FalkorDB, FalkorDBLite (embedded), via [fieldz_kb](https://github.com/adrienrougny/fieldz_kb)
+- **Multiple LPG backends** -- Neo4j, FalkorDB, FalkorDBLite (embedded)
 - **Clingo/ASP backend** -- convert maps to logic programming facts
 - **File-based loading** -- save maps directly from CellDesigner, SBGN, and SBML files
 - **Collection management** -- organize maps into named collections
@@ -47,11 +47,3 @@ with momapy_kb.lpg.session.Session(backend) as session:
         "MATCH (n:GenericProcess) RETURN n"
     )
 ```
-
-## Documentation
-
-Full documentation is available at [https://adrienrougny.github.io/momapy_kb/](https://adrienrougny.github.io/momapy_kb/).
-
-## License
-
-MIT. See [LICENSE](LICENSE) for details.
