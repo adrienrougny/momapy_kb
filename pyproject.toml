@@ -19,7 +19,7 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = ["notebook>=7.4.7"]
+dev = ["notebook>=7.4.7", "pre-commit>=3.0"]
 test = [
     "pytest>=8.0",
     "testcontainers[neo4j]>=4.0",
