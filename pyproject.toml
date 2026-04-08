@@ -32,6 +32,12 @@ docs = [
     "griffe-inherited-docstrings>=1.0",
 ]
 
+[tool.hatch.build]
+exclude = [".venv*", ".tox"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/momapy_kb"]
+
 [tool.uv.sources]
 momapy = { path = "../momapy", editable = true }
 fieldz-kb = { path = "../fieldz_kb", editable = true }
