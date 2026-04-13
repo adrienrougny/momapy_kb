@@ -1,3 +1,5 @@
+"""General utility functions for momapy_kb."""
+
 import types
 import typing
 import importlib

@@ -1,3 +1,10 @@
+"""Custom type plugins for momapy-specific types.
+
+Provides node classes and PylpgTypePlugin implementations for types
+that are specific to momapy: FrozenDict, NoneValueType,
+LayoutModelMapping, and FrozenSurjectionDict.
+"""
+
 import typing
 
 import frozendict
@@ -303,6 +310,15 @@ class FrozenSurjectionDictPlugin(fieldz_kb.lpg.core.PylpgTypePlugin):
 
 
 def register_momapy_plugins(ctx: fieldz_kb.lpg.core.PylpgContext) -> None:
+    """Register all momapy-specific type plugins on a context.
+
+    Registers plugins for FrozenDict, NoneValueType, LayoutModelMapping,
+    and FrozenSurjectionDict, and adds the corresponding type-to-node-class
+    and node-class-to-type mappings.
+
+    Args:
+        ctx: The pylpg context to register plugins on.
+    """
     ctx.register(FrozenDictPlugin)
     ctx.register(NoneValueTypePlugin)
     ctx.register(LayoutModelMappingPlugin)

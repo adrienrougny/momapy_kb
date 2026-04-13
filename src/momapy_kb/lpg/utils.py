@@ -1,3 +1,5 @@
+"""LPG utility functions for node introspection and documentation generation."""
+
 import pathlib
 import typing
 
