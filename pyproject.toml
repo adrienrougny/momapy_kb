@@ -1,6 +1,6 @@
 [project]
 name = "momapy_kb"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Momapy maps to KB"
 authors = [{ name = "Adrien Rougny", email = "adrienrougny@gmail.com" }]
 dependencies = [
@@ -32,6 +32,12 @@ docs = [
     "griffe-fieldz>=0.2",
     "griffe-inherited-docstrings>=1.0",
 ]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+tag_regex = '^v(?P<version>([0-9].*))'
 
 [tool.hatch.build]
 exclude = [".venv*", ".tox"]
