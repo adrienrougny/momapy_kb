@@ -469,6 +469,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" core">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#momapy_kb.core.Collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Collection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#momapy_kb.core.CollectionEntry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;CollectionEntry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -965,6 +993,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" core">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#momapy_kb.core.Collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Collection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#momapy_kb.core.CollectionEntry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;CollectionEntry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -999,6 +1055,140 @@
 
     <div class="doc doc-contents first">
 
+        <p>Core data models for momapy_kb.</p>
+<p>Provides CollectionEntry and Collection dataclasses for organizing
+maps into named collections.</p>
+
+
+
+
+
+
+
+
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            Collection
+
+
+  
+      dataclass
+   (momapy_kb.core.Collection)" href="#momapy_kb.core.Collection">Collection</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>A named collection of map entries.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><a class="autorefs autorefs-internal" title="            CollectionEntry
+
+
+  
+      dataclass
+   (momapy_kb.core.CollectionEntry)" href="#momapy_kb.core.CollectionEntry">CollectionEntry</a></code></td>
+            <td>
+              <div class="doc-md-description">
+                <p>A single entry in a collection.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="momapy_kb.core.Collection" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">Collection</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+</h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Collection</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">entries</span><span class="p">:</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            CollectionEntry
+
+
+  
+      dataclass
+   (momapy_kb.core.CollectionEntry)" href="#momapy_kb.core.CollectionEntry">CollectionEntry</a></span><span class="p">]</span> <span class="o">=</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">())</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>A named collection of map entries.</p>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="momapy_kb.core.Collection.name">name</span></code></td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The collection name.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="momapy_kb.core.Collection.entries">entries</span></code></td>
+            <td>
+                  <code><span title="frozenset">frozenset</span>[<a class="autorefs autorefs-internal" title="            CollectionEntry
+
+
+  
+      dataclass
+   (momapy_kb.core.CollectionEntry)" href="#momapy_kb.core.CollectionEntry">CollectionEntry</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The entries in this collection.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
 
 
 
@@ -1015,6 +1205,149 @@
 
 <div class="doc doc-children">
 
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="momapy_kb.core.CollectionEntry" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">CollectionEntry</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+</h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CollectionEntry</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n"><span title="momapy.core.map.Map">Map</span></span> <span class="o">|</span> <span class="n"><span title="momapy.core.model.Model">Model</span></span> <span class="o">|</span> <span class="n"><span title="momapy.core.layout.Layout">Layout</span></span><span class="p">,</span> <span class="n">rdf_annotations</span><span class="p">:</span> <span class="n"><span title="frozendict.frozendict">frozendict</span></span><span class="p">[</span><span class="n"><span title="momapy.core.elements.MapElement">MapElement</span></span><span class="p">,</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">[</span><span class="n"><span title="momapy.sbml.core.RDFAnnotation">RDFAnnotation</span></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ids</span><span class="p">:</span> <span class="n"><span title="frozendict.frozendict">frozendict</span></span><span class="p">[</span><span class="n"><span title="momapy.core.elements.MapElement">MapElement</span></span><span class="p">,</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="n"><span title="frozendict.frozendict">frozendict</span></span><span class="p">[</span><span class="n"><span title="momapy.core.elements.MapElement">MapElement</span></span><span class="p">,</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>A single entry in a collection.</p>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="momapy_kb.core.CollectionEntry.id_">id_</span></code></td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Unique identifier for this entry.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="momapy_kb.core.CollectionEntry.model">model</span></code></td>
+            <td>
+                  <code><span title="momapy.core.map.Map">Map</span> | <span title="momapy.core.model.Model">Model</span> | <span title="momapy.core.layout.Layout">Layout</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The momapy map, model, or layout object.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="momapy_kb.core.CollectionEntry.rdf_annotations">rdf_annotations</span></code></td>
+            <td>
+                  <code><span title="frozendict.frozendict">frozendict</span>[<span title="momapy.core.elements.MapElement">MapElement</span>, <span title="frozenset">frozenset</span>[<span title="momapy.sbml.core.RDFAnnotation">RDFAnnotation</span>]] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional RDF annotations per map element.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="momapy_kb.core.CollectionEntry.file_path">file_path</span></code></td>
+            <td>
+                  <code><span title="str">str</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional path to the source file.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="momapy_kb.core.CollectionEntry.ids">ids</span></code></td>
+            <td>
+                  <code><span title="frozendict.frozendict">frozendict</span>[<span title="momapy.core.elements.MapElement">MapElement</span>, <span title="frozenset">frozenset</span>[<span title="str">str</span>]] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional ID mappings per map element.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="momapy_kb.core.CollectionEntry.notes">notes</span></code></td>
+            <td>
+                  <code><span title="frozendict.frozendict">frozendict</span>[<span title="momapy.core.elements.MapElement">MapElement</span>, <span title="frozenset">frozenset</span>[<span title="str">str</span>]] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional notes per map element.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
 
 
 
