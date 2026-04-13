@@ -1,9 +1,11 @@
 """Tests for momapy_kb LPG type plugins."""
 
 import pytest
+import frozendict
 
 import fieldz_kb.lpg.core
 import fieldz_kb.lpg.graph
+import fieldz_kb.lpg.plugins
 
 import momapy.drawing
 import momapy.core.mapping
@@ -25,6 +27,10 @@ class TestRegisterMomapyPlugins:
 
     def test_registers_type_to_node_class_mappings(self, ctx):
         assert (
+            ctx.type_to_node_class[frozendict.frozendict]
+            is momapy_kb.lpg.types.FrozenDict
+        )
+        assert (
             ctx.type_to_node_class[momapy.drawing.NoneValueType]
             is momapy_kb.lpg.types.NoneValueType
         )
@@ -39,6 +45,10 @@ class TestRegisterMomapyPlugins:
 
     def test_registers_node_class_to_type_mappings(self, ctx):
         assert (
+            ctx.node_class_to_type[momapy_kb.lpg.types.FrozenDict]
+            is frozendict.frozendict
+        )
+        assert (
             ctx.node_class_to_type[momapy_kb.lpg.types.NoneValueType]
             is momapy.drawing.NoneValueType
         )
@@ -52,6 +62,14 @@ class TestRegisterMomapyPlugins:
         )
 
     def test_plugins_are_registered(self, ctx):
+        plugin = ctx.get_plugin_for_type(frozendict.frozendict)
+        # May be FrozenDictPlugin or fieldz_kb's DictPlugin depending on
+        # whether fieldz_kb still handles frozendict
+        assert plugin in (
+            momapy_kb.lpg.types.FrozenDictPlugin,
+            fieldz_kb.lpg.plugins.DictPlugin,
+        )
+
         plugin = ctx.get_plugin_for_type(momapy.drawing.NoneValueType)
         assert plugin is momapy_kb.lpg.types.NoneValueTypePlugin
 
@@ -60,6 +78,34 @@ class TestRegisterMomapyPlugins:
 
         plugin = ctx.get_plugin_for_type(momapy.utils.FrozenSurjectionDict)
         assert plugin is momapy_kb.lpg.types.FrozenSurjectionDictPlugin
+
+
+class TestFrozenDictPlugin:
+    """Tests for the FrozenDict plugin."""
+
+    def test_can_handle_type(self):
+        assert momapy_kb.lpg.types.FrozenDictPlugin.can_handle_type(
+            frozendict.frozendict
+        )
+
+    def test_cannot_handle_other_type(self):
+        assert not momapy_kb.lpg.types.FrozenDictPlugin.can_handle_type(dict)
+
+    def test_can_handle_node_class(self, ctx):
+        assert momapy_kb.lpg.types.FrozenDictPlugin.can_handle_node_class(
+            momapy_kb.lpg.types.FrozenDict, ctx
+        )
+
+    def test_make_nodes_from_object(self, ctx):
+        d = frozendict.frozendict({"a": 1, "b": 2})
+        nodes, relationships = (
+            momapy_kb.lpg.types.FrozenDictPlugin.make_nodes_from_object(
+                d, ctx, "id", (), {}
+            )
+        )
+        assert len(nodes) > 0
+        assert isinstance(nodes[0], momapy_kb.lpg.types.FrozenDict)
+        assert len(relationships) > 0
 
 
 class TestNoneValueTypePlugin:
@@ -168,6 +214,11 @@ class TestFrozenSurjectionDictPlugin:
 class TestNodeClassInheritance:
     """Tests for node class hierarchy."""
 
+    def test_frozen_dict_is_mapping(self):
+        assert issubclass(
+            momapy_kb.lpg.types.FrozenDict, fieldz_kb.lpg.graph.Mapping
+        )
+
     def test_none_value_type_is_base_node(self):
         assert issubclass(
             momapy_kb.lpg.types.NoneValueType, fieldz_kb.lpg.graph.BaseNode
@@ -175,12 +226,12 @@ class TestNodeClassInheritance:
 
     def test_layout_model_mapping_is_frozen_dict(self):
         assert issubclass(
-            momapy_kb.lpg.types.LayoutModelMapping, fieldz_kb.lpg.graph.FrozenDict
+            momapy_kb.lpg.types.LayoutModelMapping, momapy_kb.lpg.types.FrozenDict
         )
 
     def test_frozen_surjection_dict_is_frozen_dict(self):
         assert issubclass(
-            momapy_kb.lpg.types.FrozenSurjectionDict, fieldz_kb.lpg.graph.FrozenDict
+            momapy_kb.lpg.types.FrozenSurjectionDict, momapy_kb.lpg.types.FrozenDict
         )
 
 
