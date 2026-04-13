@@ -7,12 +7,19 @@ dependencies = [
   "colorama>=0.4.6",
   "jinja2>=3.1.3",
   "frozendict>=2.4.6",
-  "momapy",
-  "fieldz-kb[all]",
+  "momapy>=0.6.1",
+  "fieldz-kb>=0.2.0",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
 license = { text = "MIT" }
+
+[project.optional-dependencies]
+clingo = ["fieldz-kb[clingo]"]
+neo4j = ["fieldz-kb[neo4j]"]
+falkordb = ["fieldz-kb[falkordb]"]
+falkordblite = ["fieldz-kb[falkordblite]"]
+all = ["momapy_kb[clingo,neo4j,falkordb,falkordblite]"]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
@@ -20,17 +27,14 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = ["notebook>=7.4.7", "pre-commit>=3.0"]
-test = [
-    "pytest>=8.0",
-    "testcontainers[neo4j]>=4.0",
-]
+test = ["pytest>=8.0", "testcontainers[neo4j]>=4.0", "momapy_kb[all]"]
 docs = [
-    "mkdocs>=1.6",
-    "mkdocs-material>=9.0",
-    "mkdocstrings[python]>=0.24",
-    "mkdocs-autorefs>=1.0",
-    "griffe-fieldz>=0.2",
-    "griffe-inherited-docstrings>=1.0",
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.0",
+  "mkdocstrings[python]>=0.24",
+  "mkdocs-autorefs>=1.0",
+  "griffe-fieldz>=0.2",
+  "griffe-inherited-docstrings>=1.0",
 ]
 
 [tool.hatch.version]
@@ -44,7 +48,3 @@ exclude = [".venv*", ".tox"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/momapy_kb"]
-
-[tool.uv.sources]
-momapy = { path = "../momapy", editable = true }
-fieldz-kb = { path = "../fieldz_kb", editable = true }
