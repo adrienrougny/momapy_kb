@@ -8,6 +8,10 @@ import pytest
 import momapy_kb.lpg.session
 import momapy_kb.core
 
+TESTS_DIR = pathlib.Path(__file__).parent
+SBGN_MAPS = sorted(TESTS_DIR.glob("sbgn/maps/**/*.sbgn"))
+CELLDESIGNER_MAPS = sorted(TESTS_DIR.glob("celldesigner/maps/**/*.xml"))
+
 
 @dataclasses.dataclass
 class Gene:
@@ -215,32 +219,6 @@ class TestDeleteAll:
         assert len(results) == 0
 
 
-@pytest.mark.usefixtures("clear_database")
-class TestSaveFromFile:
-    """Tests for saving objects from files."""
-
-    def test_save_from_file_celldesigner(self, session):
-        test_file = pathlib.Path(__file__).parent / "celldesigner_example.xml"
-        if not test_file.exists():
-            pytest.skip("celldesigner_example.xml not found")
-        session.save_from_file(
-            str(test_file), return_type="model", integration_mode="hash"
-        )
-
-        results = session.execute_query("MATCH (n) RETURN count(n) AS count")
-        assert results[0]["count"] > 0
-
-    def test_save_from_file_sbgn(self, session):
-        test_file = pathlib.Path(__file__).parent / "test.xml"
-        if not test_file.exists():
-            pytest.skip("test.xml not found")
-        session.save_from_file(
-            str(test_file), return_type="model", integration_mode="hash"
-        )
-
-        results = session.execute_query("MATCH (n) RETURN count(n) AS count")
-        assert results[0]["count"] > 0
-
 
 @pytest.mark.usefixtures("clear_database")
 class TestCollections:
@@ -293,5 +271,51 @@ class TestCollections:
         assert len(results) == 1
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+@pytest.mark.usefixtures("clear_database")
+class TestSaveFromFile:
+    """Tests for saving maps from files."""
+
+    @pytest.mark.parametrize(
+        "map_file",
+        SBGN_MAPS,
+        ids=[p.stem for p in SBGN_MAPS],
+    )
+    def test_save_from_file_sbgn(self, session, map_file):
+        session.save_from_file(
+            str(map_file), return_type="model", integration_mode="hash"
+        )
+        results = session.execute_query("MATCH (n) RETURN count(n) AS count")
+        assert results[0]["count"] > 0
+
+    @pytest.mark.parametrize(
+        "map_file",
+        CELLDESIGNER_MAPS,
+        ids=[p.stem for p in CELLDESIGNER_MAPS],
+    )
+    def test_save_from_file_celldesigner(self, session, map_file):
+        session.save_from_file(
+            str(map_file), return_type="model", integration_mode="hash"
+        )
+        results = session.execute_query("MATCH (n) RETURN count(n) AS count")
+        assert results[0]["count"] > 0
+
+
+@pytest.mark.usefixtures("clear_database")
+class TestSaveCollectionsFromFilePaths:
+    """Tests for saving collections from file paths."""
+
+    @pytest.mark.parametrize(
+        "map_files,name",
+        [(SBGN_MAPS, "sbgn"), (CELLDESIGNER_MAPS, "celldesigner")],
+        ids=["sbgn", "celldesigner"],
+    )
+    def test_save_collections_from_file_paths(self, session, map_files, name):
+        session.save_collections_from_file_paths(
+            [(name, map_files)],
+            return_type="model",
+        )
+        results = session.execute_query(
+            "MATCH (n:Collection) RETURN n.name AS name"
+        )
+        assert len(results) == 1
+        assert results[0]["name"] == name
