@@ -25,6 +25,7 @@ class CollectionEntry:
         model: The momapy map, model, or layout object.
         element_to_annotations: Optional mapping from map elements to their
             annotations.
+        id_to_element: Optional mapping from momapy element IDs to elements.
         file_path: Optional path to the source file.
         source_id_to_model_element: Optional mapping from source file IDs
             to model elements.
@@ -36,6 +37,7 @@ class CollectionEntry:
     id_: str
     model: momapy.core.map.Map | momapy.core.model.Model | momapy.core.layout.Layout
     element_to_annotations: frozendict.frozendict | None = None
+    id_to_element: frozendict.frozendict | None = None
     file_path: str | None = None
     source_id_to_model_element: momapy.utils.FrozenSurjectionDict | None = None
     source_id_to_layout_element: momapy.utils.FrozenSurjectionDict | None = None

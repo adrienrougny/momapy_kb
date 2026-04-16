@@ -348,6 +348,7 @@ class Session:
                     model=model,
                     file_path=str(file_path),
                     element_to_annotations=reader_result.element_to_annotations,
+                    id_to_element=reader_result.id_to_element,
                     source_id_to_model_element=reader_result.source_id_to_model_element,
                     source_id_to_layout_element=reader_result.source_id_to_layout_element,
                 )

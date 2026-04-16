@@ -47,9 +47,11 @@ class TestCoreDataModels:
         )
         assert entry.id_ == "test"
         assert entry.file_path is None
-        assert entry.rdf_annotations is None
-        assert entry.ids is None
-        assert entry.notes is None
+        assert entry.element_to_annotations is None
+        assert entry.id_to_element is None
+        assert entry.source_id_to_model_element is None
+        assert entry.source_id_to_layout_element is None
+        assert entry.element_to_notes is None
 
     def test_collection_entry_is_frozen(self):
         import dataclasses
