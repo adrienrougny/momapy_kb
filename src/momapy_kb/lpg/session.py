@@ -343,14 +343,13 @@ class Session:
                 reader_result = momapy.io.core.read(file_path, return_type=return_type)
                 model_id = file_path.stem
                 model = reader_result.obj
-                annotations = reader_result.annotations
-                ids = reader_result.ids
                 collection_entry = momapy_kb.core.CollectionEntry(
                     id_=model_id,
                     model=model,
                     file_path=str(file_path),
-                    rdf_annotations=annotations,
-                    ids=ids,
+                    element_to_annotations=reader_result.element_to_annotations,
+                    source_id_to_model_element=reader_result.source_id_to_model_element,
+                    source_id_to_layout_element=reader_result.source_id_to_layout_element,
                 )
                 collection_entries.append(collection_entry)
             collection_names_and_entries.append(
