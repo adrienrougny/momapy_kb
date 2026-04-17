@@ -22,7 +22,7 @@ class CollectionEntry:
 
     Attributes:
         id_: Unique identifier for this entry.
-        model: The momapy map, model, or layout object.
+        obj: The momapy map, model, or layout object.
         element_to_annotations: Optional mapping from map elements to their
             annotations.
         id_to_element: Optional mapping from momapy element IDs to elements.
@@ -35,7 +35,7 @@ class CollectionEntry:
     """
 
     id_: str
-    model: momapy.core.map.Map | momapy.core.model.Model | momapy.core.layout.Layout
+    obj: momapy.core.map.Map | momapy.core.model.Model | momapy.core.layout.Layout
     element_to_annotations: frozendict.frozendict | None = None
     id_to_element: frozendict.frozendict | None = None
     file_path: str | None = None

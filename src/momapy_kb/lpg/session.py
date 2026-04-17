@@ -294,6 +294,7 @@ class Session:
         collection_names_and_entries: list[
             tuple[str, list[momapy_kb.core.CollectionEntry]]
         ],
+        integration_mode: typing.Literal["id", "hash"] = "id",
         delete_all: bool = False,
     ) -> None:
         """Save collections from pre-built CollectionEntry objects.
@@ -315,13 +316,14 @@ class Session:
             collections.append(collection)
         self.save_from_objects(
             collections,
-            integration_mode="hash",
+            integration_mode=integration_mode,
         )
 
     def save_collections_from_file_paths(
         self,
         collection_names_and_file_paths: list[tuple[str, list]],
         return_type: typing.Literal["map", "model", "layout"] = "map",
+        integration_mode: typing.Literal["id", "hash"] = "id",
         delete_all: bool = False,
     ) -> None:
         """Load maps from files and save them as named collections.
@@ -341,11 +343,10 @@ class Session:
             collection_entries = []
             for file_path in collection_file_paths:
                 reader_result = momapy.io.core.read(file_path, return_type=return_type)
-                model_id = file_path.stem
-                model = reader_result.obj
+                entry_id = file_path.stem
                 collection_entry = momapy_kb.core.CollectionEntry(
-                    id_=model_id,
-                    model=model,
+                    id_=entry_id,
+                    obj=reader_result.obj,
                     file_path=str(file_path),
                     element_to_annotations=reader_result.element_to_annotations,
                     id_to_element=reader_result.id_to_element,
@@ -362,4 +363,5 @@ class Session:
         self.save_collections_from_entries(
             collection_names_and_entries,
             delete_all=delete_all,
+            integration_mode=integration_mode,
         )

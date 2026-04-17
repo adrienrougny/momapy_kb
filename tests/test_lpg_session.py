@@ -231,11 +231,11 @@ class TestCollections:
 
         entry1 = momapy_kb.core.CollectionEntry(
             id_="model1",
-            model=SimpleModel(name="test_model_1"),
+            obj=SimpleModel(name="test_model_1"),
         )
         entry2 = momapy_kb.core.CollectionEntry(
             id_="model2",
-            model=SimpleModel(name="test_model_2"),
+            obj=SimpleModel(name="test_model_2"),
         )
         session.save_collections_from_entries(
             [("TestCollection", [entry1, entry2])]
@@ -257,7 +257,7 @@ class TestCollections:
 
         entry = momapy_kb.core.CollectionEntry(
             id_="model1",
-            model=SimpleModel(name="test"),
+            obj=SimpleModel(name="test"),
         )
         session.save_collections_from_entries(
             [("TestCollection", [entry])],

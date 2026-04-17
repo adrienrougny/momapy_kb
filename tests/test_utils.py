@@ -43,7 +43,7 @@ class TestCoreDataModels:
 
         entry = momapy_kb.core.CollectionEntry(
             id_="test",
-            model=SimpleModel(name="test_model"),
+            obj=SimpleModel(name="test_model"),
         )
         assert entry.id_ == "test"
         assert entry.file_path is None
@@ -62,7 +62,7 @@ class TestCoreDataModels:
 
         entry = momapy_kb.core.CollectionEntry(
             id_="test",
-            model=SimpleModel(name="test"),
+            obj=SimpleModel(name="test"),
         )
         with pytest.raises(dataclasses.FrozenInstanceError):
             entry.id_ = "changed"
@@ -76,7 +76,7 @@ class TestCoreDataModels:
 
         entry = momapy_kb.core.CollectionEntry(
             id_="test",
-            model=SimpleModel(name="test"),
+            obj=SimpleModel(name="test"),
         )
         collection = momapy_kb.core.Collection(
             name="TestCollection",
