@@ -7,6 +7,8 @@ and layout element queries.
 
 import typing
 
+import pylpg.relationship
+
 import fieldz_kb.lpg.core
 import fieldz_kb.lpg.graph
 import fieldz_kb.lpg.session
@@ -14,6 +16,8 @@ import fieldz_kb.lpg.session
 import momapy.core.mapping
 import momapy.core.elements
 import momapy.core.layout
+import momapy.core.map
+import momapy.core.model
 import momapy.drawing
 import momapy.io.core
 import momapy.utils
@@ -65,6 +69,7 @@ class Session:
         object_: object,
         integration_mode: typing.Literal["hash", "id"] = "id",
         exclude_from_integration: tuple[type, ...] | None = None,
+        with_membership_edges: bool = False,
     ) -> None:
         """Save a single object to the database.
 
@@ -72,11 +77,15 @@ class Session:
             object_: The object to save.
             integration_mode: How to handle duplicate objects ("hash" or "id").
             exclude_from_integration: Types to exclude from integration logic.
+            with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
+                HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
+                contained element.
         """
-        self._session.save_from_object(
-            object_,
+        self.save_from_objects(
+            [object_],
             integration_mode=integration_mode,
             exclude_from_integration=exclude_from_integration,
+            with_membership_edges=with_membership_edges,
         )
 
     def save_from_objects(
@@ -84,6 +93,7 @@ class Session:
         objects: list[object],
         integration_mode: typing.Literal["hash", "id"] = "id",
         exclude_from_integration: tuple[type, ...] | None = None,
+        with_membership_edges: bool = False,
     ) -> None:
         """Save multiple objects to the database.
 
@@ -91,12 +101,98 @@ class Session:
             objects: The objects to save.
             integration_mode: How to handle duplicate objects ("hash" or "id").
             exclude_from_integration: Types to exclude from integration logic.
+            with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
+                HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
+                contained element.
         """
-        self._session.save_from_objects(
-            objects,
-            integration_mode=integration_mode,
-            exclude_from_integration=exclude_from_integration,
-        )
+        if exclude_from_integration is None:
+            exclude_from_integration = tuple()
+        object_to_node = {}
+        saved_node_ids = set()
+        all_nodes = []
+        all_relationships = []
+        for object_ in objects:
+            nodes, relationships = fieldz_kb.lpg.core.make_nodes_from_object(
+                self._context,
+                object_,
+                integration_mode,
+                exclude_from_integration,
+                object_to_node,
+            )
+            for node in nodes:
+                if id(node) not in saved_node_ids:
+                    if not isinstance(node, fieldz_kb.lpg.graph.BaseNode):
+                        raise ValueError(
+                            f"node type {type(node)} must be a subclass of BaseNode"
+                        )
+                    all_nodes.append(node)
+                    saved_node_ids.add(id(node))
+            all_relationships += relationships
+        if with_membership_edges:
+            all_relationships += self._make_membership_relationships(
+                objects, object_to_node, integration_mode
+            )
+        self._session._pylpg_session.save(all_nodes)
+        self._session._pylpg_session.save(all_relationships)
+
+    def _resolve_node(
+        self,
+        element: object,
+        object_to_node: dict,
+        integration_mode: typing.Literal["hash", "id"],
+    ) -> fieldz_kb.lpg.graph.BaseNode | None:
+        key = element if integration_mode == "hash" else id(element)
+        return object_to_node.get(key)
+
+    def _iter_model_and_layout_roots(
+        self, objects: list[object]
+    ) -> typing.Iterator[tuple[str, object]]:
+        for object_ in objects:
+            if isinstance(object_, momapy.core.map.Map):
+                if object_.model is not None:
+                    yield ("model", object_.model)
+                if object_.layout is not None:
+                    yield ("layout", object_.layout)
+            elif isinstance(object_, momapy.core.model.Model):
+                yield ("model", object_)
+            elif isinstance(object_, momapy.core.layout.Layout):
+                yield ("layout", object_)
+            elif isinstance(object_, momapy_kb.core.Collection):
+                for entry in object_.entries:
+                    yield from self._iter_model_and_layout_roots([entry.obj])
+            elif isinstance(object_, (list, tuple, frozenset, set)):
+                yield from self._iter_model_and_layout_roots(list(object_))
+
+    def _make_membership_relationships(
+        self,
+        objects: list[object],
+        object_to_node: dict,
+        integration_mode: typing.Literal["hash", "id"],
+    ) -> list[pylpg.relationship.Relationship]:
+        relationships = []
+        for kind, root in self._iter_model_and_layout_roots(objects):
+            root_node = self._resolve_node(root, object_to_node, integration_mode)
+            if root_node is None:
+                continue
+            for element in root.descendants():
+                element_node = self._resolve_node(
+                    element, object_to_node, integration_mode
+                )
+                if element_node is None:
+                    continue
+                if kind == "model":
+                    relationships.append(
+                        momapy_kb.lpg.types.HasModelElement(
+                            source=root_node, target=element_node
+                        )
+                    )
+                else:
+                    relationships.append(
+                        momapy_kb.lpg.types.HasLayoutElement(
+                            source=root_node, target=element_node
+                        )
+                    )
+        return relationships
 
     def execute_query(
         self,
@@ -145,6 +241,7 @@ class Session:
         with_layout: bool = True,
         with_model: bool = True,
         integration_mode: typing.Literal["hash", "id"] | None = None,
+        with_membership_edges: bool = False,
     ) -> None:
         """Load a map from a file and save it to the database.
 
@@ -156,6 +253,9 @@ class Session:
             with_layout: Whether to include layout data.
             with_model: Whether to include model data.
             integration_mode: How to handle duplicate objects ("hash" or "id").
+            with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
+                HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
+                contained element.
         """
         object_ = momapy.io.core.read(
             file_path=file_path,
@@ -163,7 +263,11 @@ class Session:
             with_model=with_model,
             with_layout=with_layout,
         ).obj
-        self.save_from_object(object_, integration_mode=integration_mode)
+        self.save_from_object(
+            object_,
+            integration_mode=integration_mode,
+            with_membership_edges=with_membership_edges,
+        )
 
     def get_layout_element_nodes_from_model_element_node(
         self, model_element_node: fieldz_kb.lpg.graph.BaseNode
@@ -296,12 +400,16 @@ class Session:
         ],
         integration_mode: typing.Literal["id", "hash"] = "id",
         delete_all: bool = False,
+        with_membership_edges: bool = False,
     ) -> None:
         """Save collections from pre-built CollectionEntry objects.
 
         Args:
             collection_names_and_entries: List of (name, entries) tuples.
             delete_all: If True, clear the database before saving.
+            with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
+                HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
+                contained element.
         """
         if delete_all:
             self.delete_all()
@@ -317,6 +425,7 @@ class Session:
         self.save_from_objects(
             collections,
             integration_mode=integration_mode,
+            with_membership_edges=with_membership_edges,
         )
 
     def save_collections_from_file_paths(
@@ -325,6 +434,7 @@ class Session:
         return_type: typing.Literal["map", "model", "layout"] = "map",
         integration_mode: typing.Literal["id", "hash"] = "id",
         delete_all: bool = False,
+        with_membership_edges: bool = False,
     ) -> None:
         """Load maps from files and save them as named collections.
 
@@ -332,6 +442,9 @@ class Session:
             collection_names_and_file_paths: List of (name, file_paths) tuples.
             return_type: What to extract from files ("map", "model", or "layout").
             delete_all: If True, clear the database before saving.
+            with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
+                HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
+                contained element.
         """
         if delete_all:
             self.delete_all()
@@ -364,4 +477,5 @@ class Session:
             collection_names_and_entries,
             delete_all=delete_all,
             integration_mode=integration_mode,
+            with_membership_edges=with_membership_edges,
         )
