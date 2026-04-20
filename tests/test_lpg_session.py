@@ -5,12 +5,16 @@ import pathlib
 
 import pytest
 
+import momapy.io.core
+
 import momapy_kb.lpg.session
 import momapy_kb.core
 
 TESTS_DIR = pathlib.Path(__file__).parent
 SBGN_MAPS = sorted(TESTS_DIR.glob("sbgn/maps/**/*.sbgn"))
 CELLDESIGNER_MAPS = sorted(TESTS_DIR.glob("celldesigner/maps/**/*.xml"))
+ALL_MAPS = SBGN_MAPS + CELLDESIGNER_MAPS
+ALL_MAP_PAIRS = list(zip(ALL_MAPS[:-1], ALL_MAPS[1:]))
 
 
 @dataclasses.dataclass
@@ -142,9 +146,7 @@ class TestSaveAndRetrieve:
             name: str
 
         species = Species(name="Homo sapiens")
-        session.save_from_objects(
-            [species, species], integration_mode="hash"
-        )
+        session.save_from_objects([species, species], integration_mode="hash")
 
         results = session.execute_query("MATCH (n:Species) RETURN n")
         assert len(results) == 1
@@ -219,7 +221,6 @@ class TestDeleteAll:
         assert len(results) == 0
 
 
-
 @pytest.mark.usefixtures("clear_database")
 class TestCollections:
     """Tests for collection management."""
@@ -237,13 +238,9 @@ class TestCollections:
             id_="model2",
             obj=SimpleModel(name="test_model_2"),
         )
-        session.save_collections_from_entries(
-            [("TestCollection", [entry1, entry2])]
-        )
+        session.save_collections_from_entries([("TestCollection", [entry1, entry2])])
 
-        results = session.execute_query(
-            "MATCH (n:Collection) RETURN n.name AS name"
-        )
+        results = session.execute_query("MATCH (n:Collection) RETURN n.name AS name")
         assert len(results) == 1
         assert results[0]["name"] == "TestCollection"
 
@@ -300,6 +297,91 @@ class TestSaveFromFile:
         assert results[0]["count"] > 0
 
 
+def _assert_membership_edge_counts(session, obj, return_type):
+    model_element_count = session.execute_query(
+        "MATCH ()-[r:HAS_MODEL_ELEMENT]->() RETURN count(r) AS count"
+    )[0]["count"]
+    layout_root_count = session.execute_query(
+        "MATCH (l:Layout)-[r:HAS_LAYOUT_ELEMENT]->() RETURN count(r) AS count"
+    )[0]["count"]
+    if return_type == "map":
+        assert model_element_count == len(obj.model.descendants())
+        assert layout_root_count >= len(obj.layout.descendants())
+    elif return_type == "model":
+        assert model_element_count == len(obj.descendants())
+        assert layout_root_count == 0
+    else:
+        assert model_element_count == 0
+        assert layout_root_count >= len(obj.descendants())
+
+
+@pytest.mark.usefixtures("clear_database")
+class TestMembershipEdges:
+    """Tests for with_membership_edges option."""
+
+    @pytest.mark.parametrize("return_type", ["map", "model", "layout"])
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_save_from_object(self, session, map_file, return_type):
+        obj = momapy.io.core.read(str(map_file), return_type=return_type).obj
+        session.save_from_object(
+            obj, integration_mode="hash", with_membership_edges=True
+        )
+        _assert_membership_edge_counts(session, obj, return_type)
+
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_no_model_edges_when_flag_off(self, session, map_file):
+        session.save_from_file(str(map_file), integration_mode="hash")
+        count = session.execute_query(
+            "MATCH ()-[r:HAS_MODEL_ELEMENT]->() RETURN count(r) AS count"
+        )[0]["count"]
+        assert count == 0
+
+    @pytest.mark.parametrize(
+        "map_file_1,map_file_2",
+        ALL_MAP_PAIRS,
+        ids=[f"{a.stem}+{b.stem}" for a, b in ALL_MAP_PAIRS],
+    )
+    def test_hash_mode_two_maps_membership_is_per_model(
+        self, session, map_file_1, map_file_2
+    ):
+        map_1 = momapy.io.core.read(str(map_file_1), return_type="map").obj
+        map_2 = momapy.io.core.read(str(map_file_2), return_type="map").obj
+        session.save_from_objects(
+            [map_1, map_2],
+            integration_mode="hash",
+            with_membership_edges=True,
+        )
+        total_model_edges = session.execute_query(
+            "MATCH ()-[r:HAS_MODEL_ELEMENT]->() RETURN count(r) AS count"
+        )[0]["count"]
+        expected = len(map_1.model.descendants()) + len(map_2.model.descendants())
+        assert total_model_edges == expected
+
+    @pytest.mark.parametrize("return_type", ["map", "model", "layout"])
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_save_collections_from_entries(self, session, map_file, return_type):
+        obj = momapy.io.core.read(str(map_file), return_type=return_type).obj
+        entry = momapy_kb.core.CollectionEntry(id_=map_file.stem, obj=obj)
+        session.save_collections_from_entries(
+            [("test", [entry])],
+            integration_mode="hash",
+            with_membership_edges=True,
+        )
+        _assert_membership_edge_counts(session, obj, return_type)
+
+    @pytest.mark.parametrize("return_type", ["map", "model", "layout"])
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_save_collections_from_file_paths(self, session, map_file, return_type):
+        session.save_collections_from_file_paths(
+            [("test", [map_file])],
+            return_type=return_type,
+            integration_mode="hash",
+            with_membership_edges=True,
+        )
+        obj = momapy.io.core.read(str(map_file), return_type=return_type).obj
+        _assert_membership_edge_counts(session, obj, return_type)
+
+
 @pytest.mark.usefixtures("clear_database")
 class TestSaveCollectionsFromFilePaths:
     """Tests for saving collections from file paths."""
@@ -314,8 +396,6 @@ class TestSaveCollectionsFromFilePaths:
             [(name, map_files)],
             return_type="model",
         )
-        results = session.execute_query(
-            "MATCH (n:Collection) RETURN n.name AS name"
-        )
+        results = session.execute_query("MATCH (n:Collection) RETURN n.name AS name")
         assert len(results) == 1
         assert results[0]["name"] == name
