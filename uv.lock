@@ -1579,7 +1579,7 @@ wheels = [
 
 [[package]]
 name = "momapy"
-version = "0.8.0"
+version = "0.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama" },
@@ -1591,9 +1591,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "uharfbuzz" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1a/52/2320ea50e43bb3f107cd0c926f354f509beff6536c4ee366023453002764/momapy-0.8.0.tar.gz", hash = "sha256:109561ea94577b59a545fc0ddfa0c9dab0235a3eaebb95969aaf92ddfb82ed9f", size = 1693585, upload-time = "2026-04-16T12:04:05.787Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/a2/117f6607b09beaf786edad07674a2c1330259998341fdded15c4637520b7/momapy-0.9.0.tar.gz", hash = "sha256:2fbb1e2dd30a56872a16a026cd807dbee11a292e4b8e02d599c5a761bc610e20", size = 1704059, upload-time = "2026-04-20T09:24:21.902Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/11/b5186d251c731cb4edb6f980980273eee4fb351ad9411aad58aba39fa351/momapy-0.8.0-py3-none-any.whl", hash = "sha256:1d7789e08476694bbe7ed6c1d92c75e444cca892c653010b3e1d2b1a470402eb", size = 252269, upload-time = "2026-04-16T12:04:04.02Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/03/7bb17e98a138dffd70a49b878fe20ceb4c1f8198e8848f2c623852e1cf6c/momapy-0.9.0-py3-none-any.whl", hash = "sha256:984912be06d7761fb67000a4e4e1389614dc4ac50d768be4eee740075aa7379d", size = 252194, upload-time = "2026-04-20T09:24:20.243Z" },
 ]
 
 [[package]]
@@ -1656,7 +1656,7 @@ requires-dist = [
     { name = "fieldz-kb", extras = ["neo4j"], marker = "extra == 'neo4j'" },
     { name = "frozendict", specifier = ">=2.4.6" },
     { name = "jinja2", specifier = ">=3.1.3" },
-    { name = "momapy", specifier = ">=0.8.0" },
+    { name = "momapy", specifier = ">=0.9.0" },
 ]
 provides-extras = ["all", "clingo", "falkordb", "falkordblite", "neo4j"]
 
