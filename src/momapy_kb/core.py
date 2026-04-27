@@ -12,7 +12,6 @@ import momapy.core.model
 import momapy.core.map
 import momapy.core.layout
 import momapy.core.elements
-import momapy.sbml.core
 import momapy.utils
 
 
