@@ -646,15 +646,15 @@ wheels = [
 
 [[package]]
 name = "fieldz-kb"
-version = "0.2.3"
+version = "0.2.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fieldz" },
     { name = "inflect" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5d/cb/31427087f67e8c51933902df1130420eab873e2821d49a673af646ad3f4d/fieldz_kb-0.2.3.tar.gz", hash = "sha256:4d4007a359926b7a195e5cf21fddc7d962f834272dab70b3da2fec23a4ef6918", size = 95364, upload-time = "2026-04-27T13:24:42.657Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/e2/ca64d115ec0e46a10e032bb8125e8cb04ae0dced4c05fd5d30c9664cbc6c/fieldz_kb-0.2.4.tar.gz", hash = "sha256:bef120b7d796617ab6f7b7d7a99f6a02fcecfebff342de8db556668d05ddc5b3", size = 97081, upload-time = "2026-04-29T07:59:00.453Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/b2/c7b1a7256f7599d08e9af496c8873eba3a1cad34f62a777674039dfac4fe/fieldz_kb-0.2.3-py3-none-any.whl", hash = "sha256:8def60553efc9f93e8793c884f8c4536c1111745fd02b45d55fc4433727fba57", size = 27510, upload-time = "2026-04-27T13:24:41.111Z" },
+    { url = "https://files.pythonhosted.org/packages/57/f0/77af8b398163a27231a4a154c9321a70dba296c9a1c2405320b04418a2dd/fieldz_kb-0.2.4-py3-none-any.whl", hash = "sha256:8b9b075fed803403caafebd62615db9a2c93437a021add8469f49fadeda45d47", size = 27515, upload-time = "2026-04-29T07:58:58.979Z" },
 ]
 
 [package.optional-dependencies]
@@ -1645,7 +1645,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "colorama", specifier = ">=0.4.6" },
-    { name = "fieldz-kb", specifier = ">=0.2.3" },
+    { name = "fieldz-kb", specifier = ">=0.2.4" },
     { name = "fieldz-kb", extras = ["clingo"], marker = "extra == 'all'" },
     { name = "fieldz-kb", extras = ["clingo"], marker = "extra == 'clingo'" },
     { name = "fieldz-kb", extras = ["falkordb"], marker = "extra == 'all'" },
@@ -2136,11 +2136,11 @@ wheels = [
 
 [[package]]
 name = "pylpg"
-version = "0.2.2"
+version = "0.2.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/9b/56/79c89f79a3ca000ae5edee3456b3b23f9deec1831f8c4e5fbaf14a96d11f/pylpg-0.2.2.tar.gz", hash = "sha256:8c2cdbb2a761f969296158e46112a0efc4818a50462b6b133ed65d9911a74c14", size = 90720, upload-time = "2026-04-27T11:50:07.791Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/24/66ccfac55e66e4065af9dff35a587f6a17bd25e86bac4bb03a3b5eefcc73/pylpg-0.2.3.tar.gz", hash = "sha256:619e04bb94d4eb96ab11f374113dd2351b3c5449a84b1f4200eeff2e9bb80b47", size = 90973, upload-time = "2026-04-29T07:50:02.006Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/43/536bb573355cab502f885ef1af822e2715652a2e76a3c8944efbde434e7d/pylpg-0.2.2-py3-none-any.whl", hash = "sha256:3da651ecb1a7c49d990894e93122012fc03e55c228e5b71c513323a1341b20c2", size = 13264, upload-time = "2026-04-27T11:50:06.32Z" },
+    { url = "https://files.pythonhosted.org/packages/16/a0/44f7322ee84d78afbabaac3084d293f44b86610f423c866a35652549747a/pylpg-0.2.3-py3-none-any.whl", hash = "sha256:77a0f6f9d67d9153ae472fbdfc18028bce66222ebd6565fb2e1b135dcd20b6bd", size = 13360, upload-time = "2026-04-29T07:50:00.388Z" },
 ]
 
 [package.optional-dependencies]
