@@ -1233,7 +1233,7 @@ maps into named collections.</p>
   </span>
 
 </h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CollectionEntry</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n"><span title="momapy.core.map.Map">Map</span></span> <span class="o">|</span> <span class="n"><span title="momapy.core.model.Model">Model</span></span> <span class="o">|</span> <span class="n"><span title="momapy.core.layout.Layout">Layout</span></span><span class="p">,</span> <span class="n">rdf_annotations</span><span class="p">:</span> <span class="n"><span title="frozendict.frozendict">frozendict</span></span><span class="p">[</span><span class="n"><span title="momapy.core.elements.MapElement">MapElement</span></span><span class="p">,</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">[</span><span class="n"><span title="momapy.sbml.core.RDFAnnotation">RDFAnnotation</span></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ids</span><span class="p">:</span> <span class="n"><span title="frozendict.frozendict">frozendict</span></span><span class="p">[</span><span class="n"><span title="momapy.core.elements.MapElement">MapElement</span></span><span class="p">,</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="n"><span title="frozendict.frozendict">frozendict</span></span><span class="p">[</span><span class="n"><span title="momapy.core.elements.MapElement">MapElement</span></span><span class="p">,</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">CollectionEntry</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n"><span title="momapy.core.map.Map">Map</span></span> <span class="o">|</span> <span class="n"><span title="momapy.core.model.Model">Model</span></span> <span class="o">|</span> <span class="n"><span title="momapy.core.layout.Layout">Layout</span></span><span class="p">,</span> <span class="n">element_to_annotations</span><span class="p">:</span> <span class="n"><span title="frozendict.frozendict">frozendict</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">id_to_element</span><span class="p">:</span> <span class="n"><span title="frozendict.frozendict">frozendict</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">source_id_to_model_element</span><span class="p">:</span> <span class="n"><span title="momapy.utils.FrozenIdentityMultiDict">FrozenIdentityMultiDict</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">source_id_to_layout_element</span><span class="p">:</span> <span class="n"><span title="momapy.utils.FrozenSurjectionDict">FrozenSurjectionDict</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">element_to_notes</span><span class="p">:</span> <span class="n"><span title="frozendict.frozendict">frozendict</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -1265,7 +1265,7 @@ maps into named collections.</p>
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code><span title="momapy_kb.core.CollectionEntry.model">model</span></code></td>
+            <td><code><span title="momapy_kb.core.CollectionEntry.obj">obj</span></code></td>
             <td>
                   <code><span title="momapy.core.map.Map">Map</span> | <span title="momapy.core.model.Model">Model</span> | <span title="momapy.core.layout.Layout">Layout</span></code>
             </td>
@@ -1276,13 +1276,25 @@ maps into named collections.</p>
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code><span title="momapy_kb.core.CollectionEntry.rdf_annotations">rdf_annotations</span></code></td>
+            <td><code><span title="momapy_kb.core.CollectionEntry.element_to_annotations">element_to_annotations</span></code></td>
             <td>
-                  <code><span title="frozendict.frozendict">frozendict</span>[<span title="momapy.core.elements.MapElement">MapElement</span>, <span title="frozenset">frozenset</span>[<span title="momapy.sbml.core.RDFAnnotation">RDFAnnotation</span>]] | None</code>
+                  <code><span title="frozendict.frozendict">frozendict</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional RDF annotations per map element.</p>
+                <p>Optional mapping from map elements to their
+annotations.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="momapy_kb.core.CollectionEntry.id_to_element">id_to_element</span></code></td>
+            <td>
+                  <code><span title="frozendict.frozendict">frozendict</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional mapping from momapy element IDs to elements.</p>
               </div>
             </td>
           </tr>
@@ -1298,24 +1310,37 @@ maps into named collections.</p>
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code><span title="momapy_kb.core.CollectionEntry.ids">ids</span></code></td>
+            <td><code><span title="momapy_kb.core.CollectionEntry.source_id_to_model_element">source_id_to_model_element</span></code></td>
             <td>
-                  <code><span title="frozendict.frozendict">frozendict</span>[<span title="momapy.core.elements.MapElement">MapElement</span>, <span title="frozenset">frozenset</span>[<span title="str">str</span>]] | None</code>
+                  <code><span title="momapy.utils.FrozenIdentityMultiDict">FrozenIdentityMultiDict</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional ID mappings per map element.</p>
+                <p>Optional mapping from source file IDs
+to model elements.</p>
               </div>
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code><span title="momapy_kb.core.CollectionEntry.notes">notes</span></code></td>
+            <td><code><span title="momapy_kb.core.CollectionEntry.source_id_to_layout_element">source_id_to_layout_element</span></code></td>
             <td>
-                  <code><span title="frozendict.frozendict">frozendict</span>[<span title="momapy.core.elements.MapElement">MapElement</span>, <span title="frozenset">frozenset</span>[<span title="str">str</span>]] | None</code>
+                  <code><span title="momapy.utils.FrozenSurjectionDict">FrozenSurjectionDict</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional notes per map element.</p>
+                <p>Optional mapping from source file IDs
+to layout elements.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="momapy_kb.core.CollectionEntry.element_to_notes">element_to_notes</span></code></td>
+            <td>
+                  <code><span title="frozendict.frozendict">frozendict</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional mapping from map elements to their notes.</p>
               </div>
             </td>
           </tr>
