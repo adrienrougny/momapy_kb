@@ -42,6 +42,10 @@ class TestRegisterMomapyPlugins:
             ctx.type_to_node_class[momapy.utils.FrozenSurjectionDict]
             is momapy_kb.lpg.types.FrozenSurjectionDict
         )
+        assert (
+            ctx.type_to_node_class[momapy.utils.FrozenIdentityMultiDict]
+            is momapy_kb.lpg.types.FrozenIdentityMultiDict
+        )
 
     def test_registers_node_class_to_type_mappings(self, ctx):
         assert (
@@ -59,6 +63,10 @@ class TestRegisterMomapyPlugins:
         assert (
             ctx.node_class_to_type[momapy_kb.lpg.types.FrozenSurjectionDict]
             is momapy.utils.FrozenSurjectionDict
+        )
+        assert (
+            ctx.node_class_to_type[momapy_kb.lpg.types.FrozenIdentityMultiDict]
+            is momapy.utils.FrozenIdentityMultiDict
         )
 
     def test_plugins_are_registered(self, ctx):
@@ -78,6 +86,9 @@ class TestRegisterMomapyPlugins:
 
         plugin = ctx.get_plugin_for_type(momapy.utils.FrozenSurjectionDict)
         assert plugin is momapy_kb.lpg.types.FrozenSurjectionDictPlugin
+
+        plugin = ctx.get_plugin_for_type(momapy.utils.FrozenIdentityMultiDict)
+        assert plugin is momapy_kb.lpg.types.FrozenIdentityMultiDictPlugin
 
 
 class TestFrozenDictPlugin:
@@ -211,6 +222,38 @@ class TestFrozenSurjectionDictPlugin:
         assert len(relationships) > 0
 
 
+class TestFrozenIdentityMultiDictPlugin:
+    """Tests for the FrozenIdentityMultiDict plugin."""
+
+    def test_can_handle_type(self):
+        assert momapy_kb.lpg.types.FrozenIdentityMultiDictPlugin.can_handle_type(
+            momapy.utils.FrozenIdentityMultiDict
+        )
+
+    def test_cannot_handle_other_type(self):
+        assert not momapy_kb.lpg.types.FrozenIdentityMultiDictPlugin.can_handle_type(
+            dict
+        )
+
+    def test_can_handle_node_class(self, ctx):
+        assert (
+            momapy_kb.lpg.types.FrozenIdentityMultiDictPlugin.can_handle_node_class(
+                momapy_kb.lpg.types.FrozenIdentityMultiDict, ctx
+            )
+        )
+
+    def test_make_nodes_from_object(self, ctx):
+        d = momapy.utils.FrozenIdentityMultiDict({"x": ["a", "b"], "y": ["a"]})
+        nodes, relationships = (
+            momapy_kb.lpg.types.FrozenIdentityMultiDictPlugin.make_nodes_from_object(
+                d, ctx, "id", (), {}
+            )
+        )
+        assert len(nodes) > 0
+        assert isinstance(nodes[0], momapy_kb.lpg.types.FrozenIdentityMultiDict)
+        assert len(relationships) > 0
+
+
 class TestNodeClassInheritance:
     """Tests for node class hierarchy."""
 
@@ -232,6 +275,12 @@ class TestNodeClassInheritance:
     def test_frozen_surjection_dict_is_frozen_dict(self):
         assert issubclass(
             momapy_kb.lpg.types.FrozenSurjectionDict, momapy_kb.lpg.types.FrozenDict
+        )
+
+    def test_frozen_identity_multi_dict_is_frozen_dict(self):
+        assert issubclass(
+            momapy_kb.lpg.types.FrozenIdentityMultiDict,
+            momapy_kb.lpg.types.FrozenDict,
         )
 
 

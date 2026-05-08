@@ -69,6 +69,7 @@ class TestSessionLifecycle:
         assert momapy.drawing.NoneValueType in ctx.type_to_node_class
         assert momapy.core.mapping.LayoutModelMapping in ctx.type_to_node_class
         assert momapy.utils.FrozenSurjectionDict in ctx.type_to_node_class
+        assert momapy.utils.FrozenIdentityMultiDict in ctx.type_to_node_class
 
 
 @pytest.mark.usefixtures("clear_database")

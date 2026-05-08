@@ -38,7 +38,7 @@ class CollectionEntry:
     element_to_annotations: frozendict.frozendict | None = None
     id_to_element: frozendict.frozendict | None = None
     file_path: str | None = None
-    source_id_to_model_element: momapy.utils.FrozenSurjectionDict | None = None
+    source_id_to_model_element: momapy.utils.FrozenIdentityMultiDict | None = None
     source_id_to_layout_element: momapy.utils.FrozenSurjectionDict | None = None
     element_to_notes: frozendict.frozendict | None = None
 
