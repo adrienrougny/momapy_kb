@@ -283,10 +283,13 @@ class Session:
         Returns:
             A list of layout element nodes.
         """
-        query = """
+        database_id_func_name = (
+            self._session._pylpg_session._backend._database_id_func_name
+        )
+        query = f"""
             MATCH (mapping:LayoutModelMapping)-[:HAS_ITEM]->(item:Item)-[:HAS_VALUE]->(model_element:ModelElement),
             (item)-[:HAS_KEY]->(key)
-            WHERE elementId(model_element) = $element_id
+            WHERE {database_id_func_name}(model_element) = $element_id
             RETURN key
         """
         results = self._session._pylpg_session.execute_query(
