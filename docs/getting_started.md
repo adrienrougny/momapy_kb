@@ -167,7 +167,7 @@ with momapy_kb.lpg.session.Session(backend) as session:
     # From pre-built entries
     entry = momapy_kb.core.CollectionEntry(
         id_="model_1",
-        model=my_model,
+        obj=my_model,
     )
     session.save_collections_from_entries(
         [("MyCollection", [entry])]
