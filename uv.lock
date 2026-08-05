@@ -646,15 +646,15 @@ wheels = [
 
 [[package]]
 name = "fieldz-kb"
-version = "0.2.4"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fieldz" },
     { name = "inflect" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fd/e2/ca64d115ec0e46a10e032bb8125e8cb04ae0dced4c05fd5d30c9664cbc6c/fieldz_kb-0.2.4.tar.gz", hash = "sha256:bef120b7d796617ab6f7b7d7a99f6a02fcecfebff342de8db556668d05ddc5b3", size = 97081, upload-time = "2026-04-29T07:59:00.453Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5e/f1/9bf866e62bf44f3afc49c20b358e7c9ef1c3ee871ce6ddb7acdb957ef29a/fieldz_kb-0.3.0.tar.gz", hash = "sha256:47d75a07362010156213a3b3329cf322b240b4a2a52daef527ff8f5da208b0b7", size = 99607, upload-time = "2026-08-05T16:00:06.913Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/f0/77af8b398163a27231a4a154c9321a70dba296c9a1c2405320b04418a2dd/fieldz_kb-0.2.4-py3-none-any.whl", hash = "sha256:8b9b075fed803403caafebd62615db9a2c93437a021add8469f49fadeda45d47", size = 27515, upload-time = "2026-04-29T07:58:58.979Z" },
+    { url = "https://files.pythonhosted.org/packages/98/8a/a895a7314fbe977b005f53adda8b8d831ce001a9b8dea900e6abe1275438/fieldz_kb-0.3.0-py3-none-any.whl", hash = "sha256:3b6097a820212c85ed659109d549fd22d0e1887fe67b66e521911405d88232f7", size = 27578, upload-time = "2026-08-05T16:00:05.582Z" },
 ]
 
 [package.optional-dependencies]
@@ -1722,7 +1722,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "colorama", specifier = ">=0.4.6" },
-    { name = "fieldz-kb", specifier = ">=0.2.4" },
+    { name = "fieldz-kb", specifier = ">=0.3.0" },
     { name = "fieldz-kb", extras = ["clingo"], marker = "extra == 'all'" },
     { name = "fieldz-kb", extras = ["clingo"], marker = "extra == 'clingo'" },
     { name = "fieldz-kb", extras = ["falkordb"], marker = "extra == 'all'" },

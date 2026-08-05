@@ -20,13 +20,7 @@ def _save_map(session, map_file):
 
 
 def _first_model_element_node(session):
-    """Get one saved model element node.
-
-    Nodes are only reachable through the underlying pylpg session: the public
-    `execute_query` returns dicts and `execute_query_as_objects` returns momapy
-    objects, neither of which the node-taking methods accept.
-    """
-    results = session._session._pylpg_session.execute_query(
+    results = session.execute_query(
         "MATCH (n:ModelElement) RETURN n LIMIT 1", resolve_nodes=True
     )
     if not results:

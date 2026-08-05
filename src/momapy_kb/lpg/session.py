@@ -198,17 +198,22 @@ class Session:
         self,
         query: str,
         params: dict | None = None,
+        resolve_nodes: bool = False,
     ) -> list[dict]:
         """Execute a Cypher query against the database.
 
         Args:
             query: The Cypher query string.
             params: Optional query parameters.
+            resolve_nodes: When True, any driver node objects in the results
+                are hydrated into `pylpg.node.Node` instances.
 
         Returns:
             Query results as a list of dicts.
         """
-        return self._session.execute_query(query, params=params)
+        return self._session.execute_query(
+            query, params=params, resolve_nodes=resolve_nodes
+        )
 
     def execute_query_as_objects(
         self,
@@ -292,9 +297,9 @@ class Session:
             WHERE {database_id_func_name}(model_element) = $element_id
             RETURN key
         """
-        results = self._session._pylpg_session.execute_query(
+        results = self.execute_query(
             query,
-            parameters={"element_id": model_element_node._database_id},
+            params={"element_id": model_element_node._database_id},
             resolve_nodes=True,
         )
         nodes = momapy_kb.utils.flatten_collection(
@@ -350,9 +355,7 @@ class Session:
             A list of rows, where each row is a list of LayoutElement objects.
         """
         layout_element_results = []
-        results = self._session._pylpg_session.execute_query(
-            query, parameters=params, resolve_nodes=True
-        )
+        results = self.execute_query(query, params=params, resolve_nodes=True)
         layout_element_node_class = self._context.type_to_node_class.get(
             momapy.core.elements.LayoutElement
         )

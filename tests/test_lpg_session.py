@@ -7,6 +7,8 @@ import pytest
 
 import momapy.io.core
 
+import pylpg.node
+
 import momapy_kb.lpg.session
 import momapy_kb.core
 
@@ -186,6 +188,16 @@ class TestExecuteQuery:
         )
         assert len(results) == 1
         assert results[0]["name"] == "EGFR"
+
+    def test_execute_query_with_resolve_nodes(self, session):
+        gene = Gene(name="TP53", chromosome=17)
+        session.save_from_object(gene)
+
+        results = session.execute_query(
+            "MATCH (n:Gene) RETURN n", resolve_nodes=True
+        )
+        assert len(results) == 1
+        assert isinstance(results[0]["n"], pylpg.node.Node)
 
     def test_execute_query_as_objects_returns_python_objects(self, session):
         gene = Gene(name="BRCA1", chromosome=17)
