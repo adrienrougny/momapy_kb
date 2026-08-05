@@ -68,10 +68,10 @@ class Gene:
 gene = Gene(name="TP53", chromosome=17)
 
 with momapy_kb.lpg.session.Session(backend) as session:
-    # Save a single object
+    # save a single object
     session.save_from_object(gene)
 
-    # Save multiple objects
+    # save multiple objects
     genes = [Gene(name="BRCA1", chromosome=17), Gene(name="HK1", chromosome=10)]
     session.save_from_objects(genes)
 ```
@@ -96,40 +96,14 @@ with momapy_kb.lpg.session.Session(backend) as session:
 
 When saving objects, you can control how duplicates are handled:
 
-- `"id"` (default): deduplicates by Python `id()`, so only repeated references to the
-  *same* object share a node
-- `"hash"`: deduplicates by hash, so objects that are merely *equal* share a node
-  (requires hashable objects)
-
-Given two `A` objects held by one parent:
-
-| | `"id"` | `"hash"` |
-| --- | --- | --- |
-| the same object twice | 1 node | 1 node |
-| equal but distinct objects | 2 nodes | 1 node |
-
-```python
-with momapy_kb.lpg.session.Session(backend) as session:
-    # Hash-based: equal objects share the same node
-    session.save_from_object(gene, integration_mode="hash")
-
-    # Id-based (default): same Python object reuses its node
-    session.save_from_object(gene, integration_mode="id")
-```
-
-#### Which mode to use
-
-Use `"hash"` when integrating **several maps**, so elements shared between them collapse
-onto one node and cross-map queries work. It requires every object to be hashable; momapy
-map elements are frozen dataclasses, so they qualify, but ordinary mutable dataclasses
-raise `ValueError`. Use `"id"` for a **single** object graph. Pass
-`exclude_from_integration=(SomeType, ...)` to opt specific types out.
+- `"id"` (default): deduplicates by Python `id()`; repeated references to the same object are modelled by a same node
+- `"hash"`: deduplicates by hash; equal objects are modelled by a same node (requires hashable objects)
 
 ### Querying
 
 ```python
 with momapy_kb.lpg.session.Session(backend) as session:
-    # Raw Cypher query -- returns list[dict]
+    # raw Cypher query, returns list[dict]
     results = session.execute_query(
         "MATCH (n:Gene) WHERE n.chromosome = $chr RETURN n.name AS name",
         params={"chr": 17},
@@ -137,7 +111,7 @@ with momapy_kb.lpg.session.Session(backend) as session:
     for row in results:
         print(row["name"])
 
-    # Query with automatic conversion to Python objects -- returns list[list[object]]
+    # query and convert to Python objects, returns list[list[object]]
     results = session.execute_query_as_objects(
         "MATCH (n:Gene) RETURN n ORDER BY n.name"
     )
@@ -148,18 +122,18 @@ with momapy_kb.lpg.session.Session(backend) as session:
 
 ### Layout element queries
 
-When a full map (model + layout) is stored, you can query model elements and retrieve their corresponding layout elements for rendering:
+When a full map (model + layout) is stored, you can query model elements and return their corresponding layout elements:
 
 ```python
 with momapy_kb.lpg.session.Session(backend) as session:
     session.save_from_file("map.sbgn", return_type="map", integration_mode="hash")
 
-    # Query and get layout elements directly
+    # query model elements and return layout elements
     results = session.cypher_query_as_layout_elements(
         "MATCH (n:Macromolecule) RETURN n"
     )
     for layout_elements in results:
-        # layout_elements can be rendered with momapy
+        # for example, render with momapy
         pass
 ```
 
@@ -172,22 +146,26 @@ import pathlib
 import momapy_kb.core
 
 with momapy_kb.lpg.session.Session(backend) as session:
-    # From file paths
+    # from file paths, with collection names
     session.save_collections_from_file_paths(
         [
-            ("COVID_DM", pathlib.Path("maps/covid/").glob("*.xml")),
-            ("PD_DM", pathlib.Path("maps/pd/").glob("*.xml")),
+            ("MyCollection1", pathlib.Path("maps/my_collection1/").glob("*.xml")),
+            ("MyCollection2", pathlib.Path("maps/my_collection2/").glob("*.xml")),
         ],
         return_type="model",
     )
 
-    # From pre-built entries
-    entry = momapy_kb.core.CollectionEntry(
-        id_="model_1",
-        obj=my_model,
+    # from pre-built entries, with collection names
+    entry1 = momapy_kb.core.CollectionEntry(
+        id_="model1",
+        obj=my_model1,
+    )
+    entry2 = momapy_kb.core.CollectionEntry(
+        id_="model2",
+        obj=my_model2,
     )
     session.save_collections_from_entries(
-        [("MyCollection", [entry])]
+        [("MyCollection", [entry1, entry2])]
     )
 ```
 
@@ -206,12 +184,12 @@ Convert momapy objects to clingo facts for answer set programming:
 import momapy_kb.clingo.core
 
 with momapy_kb.clingo.core.Session() as session:
-    # Convert an object to clingo facts
-    facts = session.make_facts_from_object(my_model)
+    # convert an object to clingo facts
+    facts = session.make_facts_from_object(obj)
 
-    # Generate predicate classes for a type
+    # generate predicate classes for a type
     predicate_classes = session.get_or_make_predicate_classes_from_type(MyType)
 
-    # Generate ontology rules (type inheritance as ASP rules)
+    # generate ontology rules (type inheritance as ASP rules)
     rules = session.make_ontology_rules_from_type(MyType)
 ```
