@@ -1,5 +1,7 @@
 # momapy_kb
 
+[![License](https://img.shields.io/github/license/adrienrougny/momapy_kb)](<https://github.com/adrienrougny/momapy_kb/blob/main/COPYING>)
+
 A library to integrate [momapy](https://github.com/adrienrougny/momapy) maps into graph databases and logic programming backends.
 
 ## Features
@@ -51,7 +53,3 @@ with momapy_kb.lpg.session.Session(backend) as session:
 ## Documentation
 
 Full documentation is available at [https://adrienrougny.github.io/momapy_kb/](https://adrienrougny.github.io/momapy_kb/).
-
-## License
-
-MIT. See [LICENSE](LICENSE) for details.
