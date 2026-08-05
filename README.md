@@ -50,6 +50,25 @@ with momapy_kb.lpg.session.Session(backend) as session:
     )
 ```
 
+## Demo
+
+A Jupyter notebook walking through storing, querying, and rendering maps with Neo4j is available at `demos/neo4j/main.ipynb`. It requires a running Neo4j server:
+
+```bash
+docker run -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/password neo4j:5
+```
+
+To run the demo locally:
+
+```bash
+git clone https://github.com/adrienrougny/momapy_kb.git
+cd momapy_kb
+pip install .[neo4j] momapy[notebook] jupyter
+jupyter notebook demos/neo4j/main.ipynb
+```
+
+The demo includes example data (`demos/neo4j/data/`) that is only available in the repository.
+
 ## Documentation
 
 Full documentation is available at [https://adrienrougny.github.io/momapy_kb/](https://adrienrougny.github.io/momapy_kb/).

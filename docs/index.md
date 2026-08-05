@@ -21,6 +21,10 @@ pip install momapy-kb[clingo]       # Clingo/ASP support
 pip install momapy-kb[all]          # Everything
 ```
 
+## Demo
+
+A notebook showcasing how to store, query and render maps with Neo4j is available here: [Demo](neo4j/main.ipynb).
+
 ## Quick example
 
 ```python
