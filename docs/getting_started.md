@@ -96,17 +96,34 @@ with momapy_kb.lpg.session.Session(backend) as session:
 
 When saving objects, you can control how duplicates are handled:
 
-- `"id"` (default) -- deduplicates by Python `id()` within a single save call
-- `"hash"` -- deduplicates by hash (requires hashable objects)
+- `"id"` (default): deduplicates by Python `id()`, so only repeated references to the
+  *same* object share a node
+- `"hash"`: deduplicates by hash, so objects that are merely *equal* share a node
+  (requires hashable objects)
+
+Given two `A` objects held by one parent:
+
+| | `"id"` | `"hash"` |
+| --- | --- | --- |
+| the same object twice | 1 node | 1 node |
+| equal but distinct objects | 2 nodes | 1 node |
 
 ```python
 with momapy_kb.lpg.session.Session(backend) as session:
-    # Hash-based: identical objects share the same node
+    # Hash-based: equal objects share the same node
     session.save_from_object(gene, integration_mode="hash")
 
     # Id-based (default): same Python object reuses its node
     session.save_from_object(gene, integration_mode="id")
 ```
+
+#### Which mode to use
+
+Use `"hash"` when integrating **several maps**, so elements shared between them collapse
+onto one node and cross-map queries work. It requires every object to be hashable; momapy
+map elements are frozen dataclasses, so they qualify, but ordinary mutable dataclasses
+raise `ValueError`. Use `"id"` for a **single** object graph. Pass
+`exclude_from_integration=(SomeType, ...)` to opt specific types out.
 
 ### Querying
 
