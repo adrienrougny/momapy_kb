@@ -45,7 +45,7 @@ with momapy_kb.lpg.session.Session(backend) as session:
     )
 
     # Get layout elements for rendering
-    layout_results = session.cypher_query_as_layout_elements(
+    layout_results = session.execute_query_as_layout_elements(
         "MATCH (n:GenericProcess) RETURN n"
     )
 ```

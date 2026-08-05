@@ -129,7 +129,7 @@ with momapy_kb.lpg.session.Session(backend) as session:
     session.save_from_file("map.sbgn", return_type="map", integration_mode="hash")
 
     # query model elements and return layout elements
-    results = session.cypher_query_as_layout_elements(
+    results = session.execute_query_as_layout_elements(
         "MATCH (n:Macromolecule) RETURN n"
     )
     for layout_elements in results:

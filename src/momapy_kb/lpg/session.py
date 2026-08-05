@@ -339,7 +339,7 @@ class Session:
         ]
         return layout_elements
 
-    def cypher_query_as_layout_elements(
+    def execute_query_as_layout_elements(
         self, query: str, params: dict | None = None
     ) -> list[list[momapy.core.elements.LayoutElement]]:
         """Execute a Cypher query and return results as layout elements.

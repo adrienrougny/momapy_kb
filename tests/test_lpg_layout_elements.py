@@ -63,8 +63,8 @@ class TestMakeLayoutElements:
 
 
 @pytest.mark.usefixtures("clear_database")
-class TestCypherQueryAsLayoutElements:
-    """Tests for cypher_query_as_layout_elements."""
+class TestExecuteQueryAsLayoutElements:
+    """Tests for execute_query_as_layout_elements."""
 
     @pytest.mark.parametrize(
         "map_file",
@@ -77,7 +77,7 @@ class TestCypherQueryAsLayoutElements:
         expected = len(session.execute_query(query))
         if not expected:
             pytest.skip("no macromolecule in map")
-        results = session.cypher_query_as_layout_elements(query)
+        results = session.execute_query_as_layout_elements(query)
         assert len(results) == expected
 
     @pytest.mark.parametrize(
@@ -87,7 +87,7 @@ class TestCypherQueryAsLayoutElements:
     )
     def test_rows_contain_layout_elements(self, session, map_file):
         _save_map(session, map_file)
-        results = session.cypher_query_as_layout_elements(
+        results = session.execute_query_as_layout_elements(
             "MATCH (n:Macromolecule) RETURN n"
         )
         if not results:
@@ -99,7 +99,7 @@ class TestCypherQueryAsLayoutElements:
             )
 
     def test_empty_result_returns_empty_list(self, session):
-        results = session.cypher_query_as_layout_elements(
+        results = session.execute_query_as_layout_elements(
             "MATCH (n:Macromolecule) WHERE n.label = 'no_such_label' RETURN n"
         )
         assert results == []
@@ -111,7 +111,7 @@ class TestCypherQueryAsLayoutElements:
     )
     def test_arcs_bring_their_source_and_target(self, session, map_file):
         _save_map(session, map_file)
-        results = session.cypher_query_as_layout_elements(
+        results = session.execute_query_as_layout_elements(
             "MATCH (n:GenericProcess) RETURN n"
         )
         if not results:
