@@ -3,7 +3,6 @@ site_url: https://adrienrougny.github.io/momapy_kb/
 nav:
   - Home: index.md
   - Getting started: getting_started.md
-  - Demo: neo4j/main.ipynb
   - API reference:
     - Core: api_reference/core.md
     - Utils: api_reference/utils.md
@@ -27,8 +26,6 @@ theme:
     - navigation.sections
     - navigation.expand
 plugins:
-  - mkdocs-jupyter:
-      ignore_h1_titles: True
   - search
   - autorefs
   - mkdocstrings:

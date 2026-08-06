@@ -82,14 +82,11 @@ Save maps directly from CellDesigner, SBGN, or SBML files:
 
 ```python
 with momapy_kb.lpg.session.Session(backend) as session:
-    # Save a full map (model + layout)
+    # save a full map (model + layout)
     session.save_from_file("model.xml", integration_mode="hash")
 
-    # Save only the model
+    # save only the model (no layout)
     session.save_from_file("model.xml", return_type="model", integration_mode="hash")
-
-    # Save only the layout
-    session.save_from_file("model.xml", return_type="layout", integration_mode="hash")
 ```
 
 ### Integration modes

@@ -36,14 +36,13 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = ["notebook>=7.4.7", "momapy[notebook]>=0.13.0", "pre-commit>=3.0"]
+dev = ["pre-commit>=3.0"]
 test = ["pytest>=8.0", "testcontainers[neo4j]>=4.0"]
 docs = [
   "mkdocs>=1.6",
   "mkdocs-material>=9.0",
   "mkdocstrings[python]>=0.24",
   "mkdocs-autorefs>=1.0",
-  "mkdocs-jupyter>=0.25.1",
   "griffe-fieldz>=0.2",
   "griffe-inherited-docstrings>=1.0",
 ]
