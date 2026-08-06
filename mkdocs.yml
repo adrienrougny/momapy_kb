@@ -1,5 +1,10 @@
 site_name: momapy_kb
 site_url: https://adrienrougny.github.io/momapy_kb/
+extra:
+  version:
+    provider: mike
+    default: stable
+    alias: true
 nav:
   - Home: index.md
   - Getting started: getting_started.md

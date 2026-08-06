@@ -1,4 +1,4 @@
-name: Deploy documentation
+name: Deploy release docs
 
 on:
   workflow_dispatch:
@@ -7,8 +7,8 @@ on:
     types: [completed]
 
 jobs:
-  deploy-docs:
-    name: Deploy documentation
+  deploy-release:
+    name: Deploy versioned documentation
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
@@ -24,7 +24,9 @@ jobs:
       id: get_tag
       run: |
         LATEST_TAG=$(git describe --tags --abbrev=0 --match "v[0-9]*" origin/main)
+        VERSION=${LATEST_TAG#v}
         echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
         git checkout $LATEST_TAG
 
     - name: Configure Git Credentials
@@ -42,7 +44,8 @@ jobs:
         restore-keys: |
           mkdocs-material-
     - name: Install MkDocs and dependencies
-      run: pip install mkdocs-material griffe-fieldz mkdocstrings-python griffe-inherited-docstrings
+      run: pip install mkdocs-material griffe-fieldz mkdocstrings-python griffe-inherited-docstrings mike
+
     - name: Generate changelog
       uses: orhun/git-cliff-action@v4
       with:
@@ -52,5 +55,11 @@ jobs:
         OUTPUT: CHANGELOG.md
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Deploy documentation
-      run: mkdocs gh-deploy --force
+    - name: Fetch gh-pages
+      run: git fetch origin gh-pages --depth=1 || true
+
+    - name: Deploy versioned docs and update stable alias
+      run: mike deploy --push --update-aliases ${{ steps.get_tag.outputs.version }} stable
+
+    - name: Set stable as default
+      run: mike set-default --push stable
