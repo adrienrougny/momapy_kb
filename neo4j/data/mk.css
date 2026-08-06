@@ -1,0 +1,175 @@
+StateVariableLayout {
+	fill: royalblue;
+	stroke: white;
+  stroke-width: 2.5;
+}
+
+StateVariableLayout > TextLayout {
+  font-size: 10.0;
+  fill: white;
+}
+
+MacromoleculeLayout {
+	fill: royalblue;
+	stroke: white;
+  stroke-width: 3.0;
+  rounded-corners: 12.0;
+}
+
+MacromoleculeLayout > TextLayout {
+  font-size: 18.0;
+  fill: white;
+}
+
+
+SimpleChemicalLayout {
+	fill: gold;
+	stroke: white;
+  stroke-width: 3.0;
+}
+
+SimpleChemicalLayout > TextLayout {
+  font-size: 18.0;
+  fill: black;
+}
+
+GenericProcessLayout {
+	fill: gray;
+	stroke: white;
+	right-connector-stroke: gray;
+  right-connector-length: 10.0;
+  right-connector-stroke-width: 2.5;
+	left-connector-stroke: gray;
+  left-connector-length: 10.0;
+  left-connector-stroke-width: 2.5;
+}
+
+AssociationLayout {
+	fill: gray;
+	stroke: white;
+	right-connector-stroke: gray;
+  right-connector-length: 10.0;
+  right-connector-stroke-width: 2.5;
+	left-connector-stroke: gray;
+  left-connector-length: 10.0;
+  left-connector-stroke-width: 2.5;
+}
+
+
+ConsumptionLayout {
+	arrowhead-fill: white;
+	arrowhead-stroke: black;
+	path-stroke: gray;
+  path-stroke-width: 2.5;
+  end-shorten: 2.0;
+}
+
+ProductionLayout {
+	arrowhead-fill: gray;
+	arrowhead-stroke: gray;
+	path-stroke: gray;
+  path-stroke-width: 2.5;
+  end-shorten: 2.0;
+  arrowhead-width: 15.0;
+  arrowhead-height: 15.0;
+}
+
+CatalysisLayout {
+	arrowhead-fill: white;
+	arrowhead-stroke: gray;
+  arrowhead-stroke-width: 3.0;
+	path-stroke: gray;
+  path-stroke-width: 2.5;
+  end-shorten: 2.0;
+  arrowhead-width: 15.0;
+  arrowhead-height: 15.0;
+}
+
+StimulationLayout {
+	arrowhead-fill: white;
+	arrowhead-stroke: gray;
+  arrowhead-stroke-width: 3.0;
+	path-stroke: gray;
+  path-stroke-width: 2.5;
+  end-shorten: 2.0;
+  arrowhead-width: 15.0;
+  arrowhead-height: 15.0;
+}
+
+SubmapLayout {
+	fill: gray;
+	stroke: white;
+  stroke-width: 3.0;
+}
+
+EquivalenceArcLayout {
+	path-stroke: gray;
+  path-stroke-width: 2.5;
+  end-shorten: 2.0;
+}
+
+TerminalLayout {
+	fill: gray;
+	stroke: white;
+  stroke-width: 3.0;
+}
+
+SubmapLayout > TextLayout {
+  font-size: 14.0;
+  fill: white;
+}
+
+TerminalLayout > TextLayout {
+  font-size: 14.0;
+  fill: white;
+}
+
+PhenotypeLayout {
+	fill: darkorange;
+	stroke: white;
+  stroke-width: 3.0;
+}
+
+PhenotypeLayout > TextLayout {
+  font-size: 18.0;
+  fill: white;
+}
+
+ComplexLayout {
+	fill: lightgray;
+	stroke: white;
+  stroke-width: 3.0;
+  cut-corners: 12.0;
+}
+
+MacromoleculeSubunitLayout {
+	fill: royalblue;
+	stroke: lightgray;
+  stroke-width: 3.0;
+  rounded-corners: 12.0;
+}
+
+MacromoleculeSubunitLayout > TextLayout {
+  font-size: 18.0;
+  fill: white;
+}
+
+MacromoleculeSubunitLayout > StateVariableLayout {
+	fill: royalblue;
+	stroke: lightgray;
+  stroke-width: 3.0;
+}
+
+CompartmentLayout {
+	fill: white;
+	stroke: gray;
+  stroke-width: 10.0;
+  rounded-corners: 15.0;
+}
+
+CompartmentLayout > TextLayout {
+  font-size: 24.0;
+  fill: gray;
+}
+
+

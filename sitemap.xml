@@ -2,50 +2,54 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/about/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/getting_started/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/api_reference/core/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/api_reference/utils/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/api_reference/clingo/session/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/api_reference/lpg/session/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/api_reference/lpg/types/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/api_reference/lpg/utils/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/api_reference/lpg/backends/falkordb/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/api_reference/lpg/backends/falkordblite/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
     </url>
     <url>
          <loc>https://adrienrougny.github.io/momapy_kb/api_reference/lpg/backends/neo4j/</loc>
-         <lastmod>2026-05-08</lastmod>
+         <lastmod>2026-08-06</lastmod>
+    </url>
+    <url>
+         <loc>https://adrienrougny.github.io/momapy_kb/neo4j/main/</loc>
+         <lastmod>2026-08-06</lastmod>
     </url>
 </urlset>
