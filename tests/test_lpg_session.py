@@ -533,3 +533,66 @@ class TestObjectKeyToNodeCache:
             session.execute_query_as_objects(
                 "MATCH (n:Dict) RETURN n", object_key_to_node={}
             )
+
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_shared_cache_across_save_from_file(self, session, map_file):
+        cache = {}
+        session.save_from_file(
+            str(map_file), integration_mode="hash", object_key_to_node=cache
+        )
+        node_count = _node_count(session)
+
+        session.save_from_file(
+            str(map_file), integration_mode="hash", object_key_to_node=cache
+        )
+        assert _node_count(session) == node_count
+
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_shared_cache_across_save_collections_from_entries(
+        self, session, map_file
+    ):
+        obj = momapy.io.core.read(str(map_file), return_type="model").obj
+        cache = {}
+        session.save_from_object(
+            obj, integration_mode="hash", object_key_to_node=cache
+        )
+        node_count = _node_count(session)
+
+        entry = momapy_kb.core.CollectionEntry(id_=map_file.stem, obj=obj)
+        session.save_collections_from_entries(
+            [("test", [entry])],
+            integration_mode="hash",
+            object_key_to_node=cache,
+        )
+        # the collection and its entry are new, the model below them is not
+        results = session.execute_query(
+            f"MATCH (n:{type(obj).__name__}) RETURN count(n) AS count"
+        )
+        assert results[0]["count"] == 1
+        assert _node_count(session) > node_count
+
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_shared_cache_across_save_collections_from_file_paths(
+        self, session, map_file
+    ):
+        cache = {}
+        session.save_collections_from_file_paths(
+            [("first", [map_file])],
+            return_type="model",
+            integration_mode="hash",
+            object_key_to_node=cache,
+        )
+        obj = momapy.io.core.read(str(map_file), return_type="model").obj
+        node_count = _node_count(session)
+
+        session.save_collections_from_file_paths(
+            [("second", [map_file])],
+            return_type="model",
+            integration_mode="hash",
+            object_key_to_node=cache,
+        )
+        results = session.execute_query(
+            f"MATCH (n:{type(obj).__name__}) RETURN count(n) AS count"
+        )
+        assert results[0]["count"] == 1
+        assert _node_count(session) > node_count

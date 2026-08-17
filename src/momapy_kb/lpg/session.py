@@ -286,6 +286,7 @@ class Session:
         with_model: bool = True,
         integration_mode: typing.Literal["hash", "id"] | None = None,
         with_membership_edges: bool = False,
+        object_key_to_node: dict | None = None,
     ) -> None:
         """Load a map from a file and save it to the database.
 
@@ -300,6 +301,9 @@ class Session:
             with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
                 HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
                 contained element.
+            object_key_to_node: Optional cache mapping object keys to their
+                nodes, updated in place. Pass the same dict across calls to
+                integrate objects shared between the files they load.
         """
         object_ = momapy.io.core.read(
             file_path=file_path,
@@ -311,6 +315,7 @@ class Session:
             object_,
             integration_mode=integration_mode,
             with_membership_edges=with_membership_edges,
+            object_key_to_node=object_key_to_node,
         )
 
     def get_layout_element_nodes_from_model_element_node(
@@ -446,6 +451,7 @@ class Session:
         integration_mode: typing.Literal["id", "hash"] = "id",
         delete_all: bool = False,
         with_membership_edges: bool = False,
+        object_key_to_node: dict | None = None,
     ) -> None:
         """Save collections from pre-built CollectionEntry objects.
 
@@ -455,6 +461,11 @@ class Session:
             with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
                 HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
                 contained element.
+            object_key_to_node: Optional cache mapping object keys to their
+                nodes, updated in place. Pass the same dict across calls to
+                integrate objects shared between them, or a dict seeded by
+                `execute_query_as_objects` to reuse the nodes of the entries'
+                objects instead of creating duplicates.
         """
         if delete_all:
             self.delete_all()
@@ -471,6 +482,7 @@ class Session:
             collections,
             integration_mode=integration_mode,
             with_membership_edges=with_membership_edges,
+            object_key_to_node=object_key_to_node,
         )
 
     def save_collections_from_file_paths(
@@ -480,6 +492,7 @@ class Session:
         integration_mode: typing.Literal["id", "hash"] = "id",
         delete_all: bool = False,
         with_membership_edges: bool = False,
+        object_key_to_node: dict | None = None,
     ) -> None:
         """Load maps from files and save them as named collections.
 
@@ -490,6 +503,9 @@ class Session:
             with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
                 HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
                 contained element.
+            object_key_to_node: Optional cache mapping object keys to their
+                nodes, updated in place. Pass the same dict across calls to
+                integrate objects shared between the collections they save.
         """
         if delete_all:
             self.delete_all()
@@ -523,4 +539,5 @@ class Session:
             delete_all=delete_all,
             integration_mode=integration_mode,
             with_membership_edges=with_membership_edges,
+            object_key_to_node=object_key_to_node,
         )
