@@ -7,6 +7,8 @@ import pytest
 
 import momapy.io.core
 
+import fieldz_kb.lpg.graph
+
 import pylpg.node
 
 import momapy_kb.lpg.session
@@ -21,6 +23,12 @@ ALL_MAP_PAIRS = list(zip(ALL_MAPS[:-1], ALL_MAPS[1:]))
 
 @dataclasses.dataclass
 class Gene:
+    name: str
+    chromosome: int
+
+
+@dataclasses.dataclass(frozen=True)
+class FrozenGene:
     name: str
     chromosome: int
 
@@ -412,3 +420,116 @@ class TestSaveCollectionsFromFilePaths:
         results = session.execute_query("MATCH (n:Collection) RETURN n.name AS name")
         assert len(results) == 1
         assert results[0]["name"] == name
+
+
+def _node_count(session):
+    return session.execute_query("MATCH (n) RETURN count(n) AS count")[0]["count"]
+
+
+@pytest.mark.usefixtures("clear_database")
+class TestObjectKeyToNodeCache:
+    """Tests for the object_key_to_node integration cache."""
+
+    def test_execute_query_as_objects_populates_cache(self, session):
+        gene = FrozenGene(name="BRCA1", chromosome=17)
+        session.save_from_object(gene, integration_mode="hash")
+
+        cache = {}
+        results = session.execute_query_as_objects(
+            "MATCH (n:FrozenGene) RETURN n", object_key_to_node=cache
+        )
+        assert list(cache) == [results[0][0]]
+        node = cache[results[0][0]]
+        assert isinstance(node, fieldz_kb.lpg.graph.BaseNode)
+
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_seeded_save_reuses_existing_nodes(self, session, map_file):
+        obj = momapy.io.core.read(str(map_file), return_type="model").obj
+        session.save_from_object(obj, integration_mode="hash")
+        node_count = _node_count(session)
+
+        cache = {}
+        results = session.execute_query_as_objects(
+            f"MATCH (n:{type(obj).__name__}) RETURN n", object_key_to_node=cache
+        )
+        session.save_from_object(
+            results[0][0], integration_mode="hash", object_key_to_node=cache
+        )
+        assert _node_count(session) == node_count
+
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_unseeded_save_duplicates_nodes(self, session, map_file):
+        obj = momapy.io.core.read(str(map_file), return_type="model").obj
+        session.save_from_object(obj, integration_mode="hash")
+        node_count = _node_count(session)
+
+        results = session.execute_query_as_objects(
+            f"MATCH (n:{type(obj).__name__}) RETURN n"
+        )
+        session.save_from_object(results[0][0], integration_mode="hash")
+        assert _node_count(session) > node_count
+
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_shared_cache_across_saves_integrates_shared_elements(
+        self, session, map_file
+    ):
+        obj = momapy.io.core.read(str(map_file), return_type="model").obj
+        cache = {}
+        session.save_from_object(
+            obj, integration_mode="hash", object_key_to_node=cache
+        )
+        node_count = _node_count(session)
+
+        session.save_from_object(
+            obj, integration_mode="hash", object_key_to_node=cache
+        )
+        assert _node_count(session) == node_count
+
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_shared_cache_with_membership_edges(self, session, map_file):
+        obj = momapy.io.core.read(str(map_file), return_type="model").obj
+        cache = {}
+        session.save_from_object(
+            obj, integration_mode="hash", object_key_to_node=cache
+        )
+        node_count = _node_count(session)
+
+        session.save_from_object(
+            obj,
+            integration_mode="hash",
+            with_membership_edges=True,
+            object_key_to_node=cache,
+        )
+        count = session.execute_query(
+            "MATCH ()-[r:HAS_MODEL_ELEMENT]->() RETURN count(r) AS count"
+        )[0]["count"]
+        assert count == len(obj.descendants())
+        assert _node_count(session) == node_count
+
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_root_seeded_save_emits_no_membership_edges(self, session, map_file):
+        obj = momapy.io.core.read(str(map_file), return_type="model").obj
+        session.save_from_object(obj, integration_mode="hash")
+
+        cache = {}
+        results = session.execute_query_as_objects(
+            f"MATCH (n:{type(obj).__name__}) RETURN n", object_key_to_node=cache
+        )
+        session.save_from_object(
+            results[0][0],
+            integration_mode="hash",
+            with_membership_edges=True,
+            object_key_to_node=cache,
+        )
+        count = session.execute_query(
+            "MATCH ()-[r:HAS_MODEL_ELEMENT]->() RETURN count(r) AS count"
+        )[0]["count"]
+        assert count == 0
+
+    def test_unhashable_object_raises(self, session):
+        session.save_from_object({"k": 1}, exclude_from_integration=(dict,))
+
+        with pytest.raises(ValueError, match="not hashable"):
+            session.execute_query_as_objects(
+                "MATCH (n:Dict) RETURN n", object_key_to_node={}
+            )

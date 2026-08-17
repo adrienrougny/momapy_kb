@@ -70,6 +70,7 @@ class Session:
         integration_mode: typing.Literal["hash", "id"] = "id",
         exclude_from_integration: tuple[type, ...] | None = None,
         with_membership_edges: bool = False,
+        object_key_to_node: dict | None = None,
     ) -> None:
         """Save a single object to the database.
 
@@ -80,12 +81,20 @@ class Session:
             with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
                 HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
                 contained element.
+            object_key_to_node: Optional cache mapping object keys to their
+                nodes, updated in place. Pass the same dict across calls to
+                integrate objects shared between them, or a dict seeded by
+                `execute_query_as_objects` to update the existing nodes instead
+                of creating duplicates. Keys are the objects themselves under
+                "hash" integration mode and their ids under "id" mode, so a
+                shared cache is only valid while the mode is constant.
         """
         self.save_from_objects(
             [object_],
             integration_mode=integration_mode,
             exclude_from_integration=exclude_from_integration,
             with_membership_edges=with_membership_edges,
+            object_key_to_node=object_key_to_node,
         )
 
     def save_from_objects(
@@ -94,6 +103,7 @@ class Session:
         integration_mode: typing.Literal["hash", "id"] = "id",
         exclude_from_integration: tuple[type, ...] | None = None,
         with_membership_edges: bool = False,
+        object_key_to_node: dict | None = None,
     ) -> None:
         """Save multiple objects to the database.
 
@@ -103,11 +113,24 @@ class Session:
             exclude_from_integration: Types to exclude from integration logic.
             with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
                 HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
-                contained element.
+                contained element. Only elements present in object_key_to_node
+                get an edge: a cache shared with an earlier save already holds
+                them, but a cache seeded from a query holds only the objects
+                the query returned, and a cached root short-circuits the walk
+                over its own descendants, so seed the elements too or leave
+                this off for seeded saves.
+            object_key_to_node: Optional cache mapping object keys to their
+                nodes, updated in place. Pass the same dict across calls to
+                integrate objects shared between them, or a dict seeded by
+                `execute_query_as_objects` to update the existing nodes instead
+                of creating duplicates. Keys are the objects themselves under
+                "hash" integration mode and their ids under "id" mode, so a
+                shared cache is only valid while the mode is constant.
         """
         if exclude_from_integration is None:
             exclude_from_integration = tuple()
-        object_to_node = {}
+        if object_key_to_node is None:
+            object_key_to_node = {}
         saved_node_ids = set()
         all_nodes = []
         all_relationships = []
@@ -117,7 +140,7 @@ class Session:
                 object_,
                 integration_mode,
                 exclude_from_integration,
-                object_to_node,
+                object_key_to_node,
             )
             for node in nodes:
                 if id(node) not in saved_node_ids:
@@ -130,7 +153,7 @@ class Session:
             all_relationships += relationships
         if with_membership_edges:
             all_relationships += self._make_membership_relationships(
-                objects, object_to_node, integration_mode
+                objects, object_key_to_node, integration_mode
             )
         self._session._pylpg_session.save(all_nodes)
         self._session._pylpg_session.save(all_relationships)
@@ -138,11 +161,11 @@ class Session:
     def _resolve_node(
         self,
         element: object,
-        object_to_node: dict,
+        object_key_to_node: dict,
         integration_mode: typing.Literal["hash", "id"],
     ) -> fieldz_kb.lpg.graph.BaseNode | None:
         key = element if integration_mode == "hash" else id(element)
-        return object_to_node.get(key)
+        return object_key_to_node.get(key)
 
     def _iter_model_and_layout_roots(
         self, objects: list[object]
@@ -166,17 +189,17 @@ class Session:
     def _make_membership_relationships(
         self,
         objects: list[object],
-        object_to_node: dict,
+        object_key_to_node: dict,
         integration_mode: typing.Literal["hash", "id"],
     ) -> list[pylpg.relationship.Relationship]:
         relationships = []
         for kind, root in self._iter_model_and_layout_roots(objects):
-            root_node = self._resolve_node(root, object_to_node, integration_mode)
+            root_node = self._resolve_node(root, object_key_to_node, integration_mode)
             if root_node is None:
                 continue
             for element in root.descendants():
                 element_node = self._resolve_node(
-                    element, object_to_node, integration_mode
+                    element, object_key_to_node, integration_mode
                 )
                 if element_node is None:
                     continue
@@ -220,6 +243,7 @@ class Session:
         query: str,
         params: dict | None = None,
         node_id_to_object: dict | None = None,
+        object_key_to_node: dict | None = None,
     ) -> list[list[object]]:
         """Execute a Cypher query and convert results to Python objects.
 
@@ -227,12 +251,27 @@ class Session:
             query: The Cypher query string.
             params: Optional query parameters.
             node_id_to_object: Optional cache mapping node database IDs to objects.
+            object_key_to_node: Optional cache mapping objects to the nodes they
+                were converted from, populated in place. Pass it to a subsequent
+                save to update the existing nodes instead of creating
+                duplicates. Only the objects a row returns directly are
+                recorded, not the ones nested inside them, so the query must
+                return whatever needs seeding. Keys are the objects themselves,
+                which matches "hash" integration mode only; a save under "id"
+                mode keys on object ids and misses every entry.
 
         Returns:
             A list of rows, where each row is a list of Python objects.
+
+        Raises:
+            ValueError: If object_key_to_node is given and a converted object is
+                not hashable.
         """
         return self._session.execute_query_as_objects(
-            query, params=params, node_id_to_object=node_id_to_object
+            query,
+            params=params,
+            node_id_to_object=node_id_to_object,
+            object_key_to_node=object_key_to_node,
         )
 
     def delete_all(self) -> None:
