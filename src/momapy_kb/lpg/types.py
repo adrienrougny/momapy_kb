@@ -20,12 +20,12 @@ import momapy.drawing
 import momapy.utils
 
 
-class HasModelElement(pylpg.relationship.Relationship):
-    __type__ = "HAS_MODEL_ELEMENT"
+class HasMemberModelElement(pylpg.relationship.Relationship):
+    __type__ = "HAS_MEMBER_MODEL_ELEMENT"
 
 
-class HasLayoutElement(pylpg.relationship.Relationship):
-    __type__ = "HAS_LAYOUT_ELEMENT"
+class HasMemberLayoutElement(pylpg.relationship.Relationship):
+    __type__ = "HAS_MEMBER_LAYOUT_ELEMENT"
 
 
 class FrozenDict(fieldz_kb.lpg.graph.Mapping):

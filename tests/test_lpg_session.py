@@ -320,20 +320,20 @@ class TestSaveFromFile:
 
 def _assert_membership_edge_counts(session, obj, return_type):
     model_element_count = session.execute_query(
-        "MATCH ()-[r:HAS_MODEL_ELEMENT]->() RETURN count(r) AS count"
+        "MATCH ()-[r:HAS_MEMBER_MODEL_ELEMENT]->() RETURN count(r) AS count"
     )[0]["count"]
-    layout_root_count = session.execute_query(
-        "MATCH (l:Layout)-[r:HAS_LAYOUT_ELEMENT]->() RETURN count(r) AS count"
+    layout_element_count = session.execute_query(
+        "MATCH ()-[r:HAS_MEMBER_LAYOUT_ELEMENT]->() RETURN count(r) AS count"
     )[0]["count"]
     if return_type == "map":
         assert model_element_count == len(obj.model.descendants())
-        assert layout_root_count >= len(obj.layout.descendants())
+        assert layout_element_count == len(obj.layout.descendants())
     elif return_type == "model":
         assert model_element_count == len(obj.descendants())
-        assert layout_root_count == 0
+        assert layout_element_count == 0
     else:
         assert model_element_count == 0
-        assert layout_root_count >= len(obj.descendants())
+        assert layout_element_count == len(obj.descendants())
 
 
 @pytest.mark.usefixtures("clear_database")
@@ -350,10 +350,21 @@ class TestMembershipEdges:
         _assert_membership_edge_counts(session, obj, return_type)
 
     @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
+    def test_field_edges_are_not_duplicated(self, session, map_file):
+        obj = momapy.io.core.read(str(map_file), return_type="layout").obj
+        session.save_from_object(
+            obj, integration_mode="hash", with_membership_edges=True
+        )
+        count = session.execute_query(
+            "MATCH (:Layout)-[r:HAS_LAYOUT_ELEMENT]->() RETURN count(r) AS count"
+        )[0]["count"]
+        assert count == len(obj.layout_elements)
+
+    @pytest.mark.parametrize("map_file", ALL_MAPS, ids=[p.stem for p in ALL_MAPS])
     def test_no_model_edges_when_flag_off(self, session, map_file):
         session.save_from_file(str(map_file), integration_mode="hash")
         count = session.execute_query(
-            "MATCH ()-[r:HAS_MODEL_ELEMENT]->() RETURN count(r) AS count"
+            "MATCH ()-[r:HAS_MEMBER_MODEL_ELEMENT]->() RETURN count(r) AS count"
         )[0]["count"]
         assert count == 0
 
@@ -373,7 +384,7 @@ class TestMembershipEdges:
             with_membership_edges=True,
         )
         total_model_edges = session.execute_query(
-            "MATCH ()-[r:HAS_MODEL_ELEMENT]->() RETURN count(r) AS count"
+            "MATCH ()-[r:HAS_MEMBER_MODEL_ELEMENT]->() RETURN count(r) AS count"
         )[0]["count"]
         expected = len(map_1.model.descendants()) + len(map_2.model.descendants())
         assert total_model_edges == expected
@@ -501,7 +512,7 @@ class TestObjectKeyToNodeCache:
             object_key_to_node=cache,
         )
         count = session.execute_query(
-            "MATCH ()-[r:HAS_MODEL_ELEMENT]->() RETURN count(r) AS count"
+            "MATCH ()-[r:HAS_MEMBER_MODEL_ELEMENT]->() RETURN count(r) AS count"
         )[0]["count"]
         assert count == len(obj.descendants())
         assert _node_count(session) == node_count
@@ -522,7 +533,7 @@ class TestObjectKeyToNodeCache:
             object_key_to_node=cache,
         )
         count = session.execute_query(
-            "MATCH ()-[r:HAS_MODEL_ELEMENT]->() RETURN count(r) AS count"
+            "MATCH ()-[r:HAS_MEMBER_MODEL_ELEMENT]->() RETURN count(r) AS count"
         )[0]["count"]
         assert count == 0
 

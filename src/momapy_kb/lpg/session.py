@@ -78,9 +78,9 @@ class Session:
             object_: The object to save.
             integration_mode: How to handle duplicate objects ("hash" or "id").
             exclude_from_integration: Types to exclude from integration logic.
-            with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
-                HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
-                contained element.
+            with_membership_edges: If True, emit HAS_MEMBER_MODEL_ELEMENT and
+                HAS_MEMBER_LAYOUT_ELEMENT edges from each Model/Layout root to
+                every contained element.
             object_key_to_node: Optional cache mapping object keys to their
                 nodes, updated in place. Pass the same dict across calls to
                 integrate objects shared between them, or a dict seeded by
@@ -111,9 +111,9 @@ class Session:
             objects: The objects to save.
             integration_mode: How to handle duplicate objects ("hash" or "id").
             exclude_from_integration: Types to exclude from integration logic.
-            with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
-                HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
-                contained element. Only elements present in object_key_to_node
+            with_membership_edges: If True, emit HAS_MEMBER_MODEL_ELEMENT and
+                HAS_MEMBER_LAYOUT_ELEMENT edges from each Model/Layout root to
+                every contained element. Only elements present in object_key_to_node
                 get an edge: a cache shared with an earlier save already holds
                 them, but a cache seeded from a query holds only the objects
                 the query returned, and a cached root short-circuits the walk
@@ -205,13 +205,13 @@ class Session:
                     continue
                 if kind == "model":
                     relationships.append(
-                        momapy_kb.lpg.types.HasModelElement(
+                        momapy_kb.lpg.types.HasMemberModelElement(
                             source=root_node, target=element_node
                         )
                     )
                 else:
                     relationships.append(
-                        momapy_kb.lpg.types.HasLayoutElement(
+                        momapy_kb.lpg.types.HasMemberLayoutElement(
                             source=root_node, target=element_node
                         )
                     )
@@ -298,9 +298,9 @@ class Session:
             with_layout: Whether to include layout data.
             with_model: Whether to include model data.
             integration_mode: How to handle duplicate objects ("hash" or "id").
-            with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
-                HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
-                contained element.
+            with_membership_edges: If True, emit HAS_MEMBER_MODEL_ELEMENT and
+                HAS_MEMBER_LAYOUT_ELEMENT edges from each Model/Layout root to
+                every contained element.
             object_key_to_node: Optional cache mapping object keys to their
                 nodes, updated in place. Pass the same dict across calls to
                 integrate objects shared between the files they load.
@@ -458,9 +458,9 @@ class Session:
         Args:
             collection_names_and_entries: List of (name, entries) tuples.
             delete_all: If True, clear the database before saving.
-            with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
-                HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
-                contained element.
+            with_membership_edges: If True, emit HAS_MEMBER_MODEL_ELEMENT and
+                HAS_MEMBER_LAYOUT_ELEMENT edges from each Model/Layout root to
+                every contained element.
             object_key_to_node: Optional cache mapping object keys to their
                 nodes, updated in place. Pass the same dict across calls to
                 integrate objects shared between them, or a dict seeded by
@@ -500,9 +500,9 @@ class Session:
             collection_names_and_file_paths: List of (name, file_paths) tuples.
             return_type: What to extract from files ("map", "model", or "layout").
             delete_all: If True, clear the database before saving.
-            with_membership_edges: If True, emit HAS_MODEL_ELEMENT and
-                HAS_LAYOUT_ELEMENT edges from each Model/Layout root to every
-                contained element.
+            with_membership_edges: If True, emit HAS_MEMBER_MODEL_ELEMENT and
+                HAS_MEMBER_LAYOUT_ELEMENT edges from each Model/Layout root to
+                every contained element.
             object_key_to_node: Optional cache mapping object keys to their
                 nodes, updated in place. Pass the same dict across calls to
                 integrate objects shared between the collections they save.
