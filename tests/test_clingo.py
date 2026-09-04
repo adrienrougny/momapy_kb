@@ -11,6 +11,7 @@ import pytest
 import clorm
 
 import momapy_kb.clingo.core
+import momapy_kb.clingo.celldesigner
 
 
 @pytest.fixture
@@ -273,6 +274,13 @@ class TestOntologyRules:
         clingo_session.get_or_make_predicate_classes_from_type(Standalone)
         rules = clingo_session.make_ontology_rules_from_type(Standalone)
         assert len(rules) == 0
+
+
+class TestCellDesignerOntologyRules:
+    """Tests for the ontology rules generated from momapy celldesigner types."""
+
+    def test_ontology_rules_generated(self):
+        assert len(momapy_kb.clingo.celldesigner.ontology_rules) > 0
 
 
 if __name__ == "__main__":
