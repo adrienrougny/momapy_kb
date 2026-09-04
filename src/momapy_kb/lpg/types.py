@@ -20,12 +20,12 @@ import momapy.drawing
 import momapy.utils
 
 
-class HasModelElement(pylpg.relationship.Relationship):
-    __type__ = "HAS_MODEL_ELEMENT"
+class HasMemberModelElement(pylpg.relationship.Relationship):
+    __type__ = "HAS_MEMBER_MODEL_ELEMENT"
 
 
-class HasLayoutElement(pylpg.relationship.Relationship):
-    __type__ = "HAS_LAYOUT_ELEMENT"
+class HasMemberLayoutElement(pylpg.relationship.Relationship):
+    __type__ = "HAS_MEMBER_LAYOUT_ELEMENT"
 
 
 class FrozenDict(fieldz_kb.lpg.graph.Mapping):
@@ -77,7 +77,7 @@ class FrozenDictPlugin(fieldz_kb.lpg.core.PylpgTypePlugin):
         ctx: fieldz_kb.lpg.core.PylpgContext,
         integration_mode: typing.Literal["hash", "id"],
         exclude_from_integration: tuple[type, ...],
-        object_to_node: dict,
+        object_key_to_node: dict,
     ) -> tuple[
         list[fieldz_kb.lpg.graph.BaseNode], list[pylpg.relationship.Relationship]
     ]:
@@ -92,7 +92,7 @@ class FrozenDictPlugin(fieldz_kb.lpg.core.PylpgTypePlugin):
                     ctx,
                     integration_mode=integration_mode,
                     exclude_from_integration=exclude_from_integration,
-                    object_to_node=object_to_node,
+                    object_key_to_node=object_key_to_node,
                 )
             )
             nodes += item_nodes
@@ -153,7 +153,7 @@ class NoneValueTypePlugin(fieldz_kb.lpg.core.PylpgTypePlugin):
         ctx: fieldz_kb.lpg.core.PylpgContext,
         integration_mode: typing.Literal["hash", "id"],
         exclude_from_integration: tuple[type, ...],
-        object_to_node: dict,
+        object_key_to_node: dict,
     ) -> tuple[
         list[fieldz_kb.lpg.graph.BaseNode], list[pylpg.relationship.Relationship]
     ]:
@@ -198,7 +198,7 @@ class LayoutModelMappingPlugin(fieldz_kb.lpg.core.PylpgTypePlugin):
         ctx: fieldz_kb.lpg.core.PylpgContext,
         integration_mode: typing.Literal["hash", "id"],
         exclude_from_integration: tuple[type, ...],
-        object_to_node: dict,
+        object_key_to_node: dict,
     ) -> tuple[
         list[fieldz_kb.lpg.graph.BaseNode], list[pylpg.relationship.Relationship]
     ]:
@@ -213,7 +213,7 @@ class LayoutModelMappingPlugin(fieldz_kb.lpg.core.PylpgTypePlugin):
                     ctx,
                     integration_mode=integration_mode,
                     exclude_from_integration=exclude_from_integration,
-                    object_to_node=object_to_node,
+                    object_key_to_node=object_key_to_node,
                 )
             )
             nodes += item_nodes
@@ -274,7 +274,7 @@ class FrozenSurjectionDictPlugin(fieldz_kb.lpg.core.PylpgTypePlugin):
         ctx: fieldz_kb.lpg.core.PylpgContext,
         integration_mode: typing.Literal["hash", "id"],
         exclude_from_integration: tuple[type, ...],
-        object_to_node: dict,
+        object_key_to_node: dict,
     ) -> tuple[
         list[fieldz_kb.lpg.graph.BaseNode], list[pylpg.relationship.Relationship]
     ]:
@@ -289,7 +289,7 @@ class FrozenSurjectionDictPlugin(fieldz_kb.lpg.core.PylpgTypePlugin):
                     ctx,
                     integration_mode=integration_mode,
                     exclude_from_integration=exclude_from_integration,
-                    object_to_node=object_to_node,
+                    object_key_to_node=object_key_to_node,
                 )
             )
             nodes += item_nodes
@@ -350,7 +350,7 @@ class FrozenIdentityMultiDictPlugin(fieldz_kb.lpg.core.PylpgTypePlugin):
         ctx: fieldz_kb.lpg.core.PylpgContext,
         integration_mode: typing.Literal["hash", "id"],
         exclude_from_integration: tuple[type, ...],
-        object_to_node: dict,
+        object_key_to_node: dict,
     ) -> tuple[
         list[fieldz_kb.lpg.graph.BaseNode], list[pylpg.relationship.Relationship]
     ]:
@@ -365,7 +365,7 @@ class FrozenIdentityMultiDictPlugin(fieldz_kb.lpg.core.PylpgTypePlugin):
                     ctx,
                     integration_mode=integration_mode,
                     exclude_from_integration=exclude_from_integration,
-                    object_to_node=object_to_node,
+                    object_key_to_node=object_key_to_node,
                 )
             )
             nodes += item_nodes

@@ -117,6 +117,48 @@ with momapy_kb.lpg.session.Session(backend) as session:
         print(gene.name, gene.chromosome)
 ```
 
+### Round-tripping objects
+
+Saving an object that was read back from the database creates a second copy of it by default, since nothing ties the reconstructed object to the nodes it came from. Pass an `object_key_to_node` cache to `execute_query_as_objects` to record that link, then hand the same cache to the save:
+
+```python
+with momapy_kb.lpg.session.Session(backend) as session:
+    object_key_to_node = {}
+    results = session.execute_query_as_objects(
+        "MATCH (n:SBGNPDModel) RETURN n",
+        object_key_to_node=object_key_to_node,
+    )
+    model = results[0][0]
+
+    # updates the existing nodes instead of creating duplicates
+    session.save_from_object(
+        model,
+        integration_mode="hash",
+        object_key_to_node=object_key_to_node,
+    )
+```
+
+Two constraints apply:
+
+- The cache is keyed by the objects themselves, so the save must use `integration_mode="hash"`. Under `"id"` mode the keys are object ids and every seeded entry is missed.
+- Only the objects a row returns directly are seeded, not the ones nested inside them, so the query must return whatever needs seeding.
+
+The same cache can also be shared between successive saves, so that objects shared between them are modelled by a same node:
+
+```python
+with momapy_kb.lpg.session.Session(backend) as session:
+    object_key_to_node = {}
+    for file_path in ["map_1.sbgn", "map_2.sbgn"]:
+        obj = momapy.io.core.read(file_path, return_type="model").obj
+        session.save_from_object(
+            obj,
+            integration_mode="hash",
+            object_key_to_node=object_key_to_node,
+        )
+```
+
+Note that `with_membership_edges=True` only emits edges for elements present in the cache. A cache shared with an earlier save holds them, but a cache seeded from a query holds only the objects the query returned, and a cached root short-circuits the walk over its own descendants: seed the elements too, or leave the option off for seeded saves.
+
 ### Layout element queries
 
 When a full map (model + layout) is stored, you can query model elements and return their corresponding layout elements:

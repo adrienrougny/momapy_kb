@@ -4,10 +4,10 @@ import fieldz_kb.clingo.core
 
 import momapy.core.elements
 import momapy.core.model
-import momapy.celldesigner.core
+import momapy.celldesigner
 
 ctx = fieldz_kb.clingo.core.get_default_context()
-_module = momapy.celldesigner.core
+_module = momapy.celldesigner
 
 ontology_rules = set([])
 for attr_name in dir(_module):

@@ -5,7 +5,10 @@ import fieldz_kb.lpg.core
 import momapy.core
 import momapy.sbgn.pd
 
+import momapy_kb.lpg.types
+
 ctx = fieldz_kb.lpg.core.get_default_context()
+momapy_kb.lpg.types.register_momapy_plugins(ctx)
 module = momapy.sbgn.pd
 for attr_name in dir(module):
     if not attr_name.startswith("_"):

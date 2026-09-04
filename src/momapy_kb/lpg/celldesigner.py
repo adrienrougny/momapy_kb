@@ -6,10 +6,13 @@ import momapy.core.map
 import momapy.core.layout
 import momapy.core.model
 import momapy.core.elements
-import momapy.celldesigner.core
+import momapy.celldesigner
+
+import momapy_kb.lpg.types
 
 ctx = fieldz_kb.lpg.core.get_default_context()
-module = momapy.celldesigner.core
+momapy_kb.lpg.types.register_momapy_plugins(ctx)
+module = momapy.celldesigner
 for attr_name in dir(module):
     if not attr_name.startswith("_"):
         attr_value = getattr(module, attr_name)
